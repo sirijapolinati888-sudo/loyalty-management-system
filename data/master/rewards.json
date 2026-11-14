@@ -1,0 +1,52 @@
+[
+  {
+    "description":"Get \u20b9100 off on next purchase",
+    "name":"\u20b9100 Discount Voucher",
+    "id":"RWD-001",
+    "monetary_value":100.0,
+    "stock_count":-1,
+    "points_required":100,
+    "is_active":true,
+    "created_at":"2025-01-01T05:30:00+05:30"
+  },
+  {
+    "description":"Applicable on all items",
+    "name":"\u20b9250 Shopping Coupon",
+    "id":"RWD-002",
+    "monetary_value":250.0,
+    "stock_count":-1,
+    "points_required":250,
+    "is_active":true,
+    "created_at":"2025-01-01T05:30:00+05:30"
+  },
+  {
+    "description":"Valid for 6 months",
+    "name":"\u20b9500 Gift Card",
+    "id":"RWD-003",
+    "monetary_value":500.0,
+    "stock_count":-1,
+    "points_required":500,
+    "is_active":true,
+    "created_at":"2025-01-01T05:30:00+05:30"
+  },
+  {
+    "description":"Exclusive merchandise pack",
+    "name":"\u20b91000 Premium Hamper",
+    "id":"RWD-004",
+    "monetary_value":1000.0,
+    "stock_count":-1,
+    "points_required":1000,
+    "is_active":true,
+    "created_at":"2025-01-01T05:30:00+05:30"
+  },
+  {
+    "description":"Access to VIP lounge & goodies",
+    "name":"\u20b92000 Luxury Experience",
+    "id":"RWD-005",
+    "monetary_value":2000.0,
+    "stock_count":-1,
+    "points_required":2000,
+    "is_active":true,
+    "created_at":"2025-01-01T05:30:00+05:30"
+  }
+]

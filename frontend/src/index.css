@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Lora';
+  src: url('./Lora/Lora-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lora';
+  src: url('./Lora/Lora-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.5rem;
+  }
+}
+
+*, ::before, ::after {
+  font-family: 'Lora', Georgia, Cambria, 'Times New Roman', Times, serif !important;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #f1f3fb;
+}
+
+body {
+  font-family: 'Lora', Georgia, Cambria, 'Times New Roman', Times, serif;
+  background-color: #f1f3fb;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   Responsive Utilities & Custom Media Queries
+   Mobile (<640px), Tablet (640px-1024px), Laptop (1024px-1440px), Desktop (>1440px)
+   ========================================================================== */
+
+/* Smooth custom responsive scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 85, 246, 0.5);
+}
+
+/* Responsive Table Wrapper with Horizontal Drag/Touch Scrolling */
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Media Query: Mobile & Small Devices (<1024px) */
+@media (max-width: 1023px) {
+  html, body, #root {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Ensure main content takes full viewport width */
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Compact padding on mobile */
+  .mobile-tight-padding {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* Full width stack on mobile inputs */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+}
+
+/* Media Query: Tablets & Medium Screens (640px to 1023px) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  html, body {
+    font-size: 13.5px;
+  }
+}
+
+/* Media Query: Large Desktop (1440px and above) */
+@media (min-width: 1440px) {
+  html, body {
+    font-size: 14px;
+  }
+}

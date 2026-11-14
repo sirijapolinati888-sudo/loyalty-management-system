@@ -1,0 +1,38 @@
+[
+  {
+    "name":"Bronze",
+    "min_spend":0.0,
+    "description":"Entry level tier",
+    "created_at":"2025-01-01T05:30:00+05:30",
+    "id":"TIER-BRONZE",
+    "max_spend":9999.0,
+    "multiplier":1.0
+  },
+  {
+    "name":"Gold",
+    "min_spend":50000.0,
+    "description":"Premium tier",
+    "created_at":"2025-01-01T05:30:00+05:30",
+    "id":"TIER-GOLD",
+    "max_spend":99999.0,
+    "multiplier":1.5
+  },
+  {
+    "name":"Platinum",
+    "min_spend":100000.0,
+    "description":"Top tier VIP",
+    "created_at":"2025-01-01T05:30:00+05:30",
+    "id":"TIER-PLATINUM",
+    "max_spend":null,
+    "multiplier":2.0
+  },
+  {
+    "name":"Silver",
+    "min_spend":10000.0,
+    "description":"Mid level tier",
+    "created_at":"2025-01-01T05:30:00+05:30",
+    "id":"TIER-SILVER",
+    "max_spend":49999.0,
+    "multiplier":1.25
+  }
+]

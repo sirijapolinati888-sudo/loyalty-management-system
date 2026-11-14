@@ -1,0 +1,2 @@
+spend_threshold,expiry_days,description,name,id,rule_type,points_awarded,is_active,created_at
+100.0,365,Earn 1 point per ₹100 of eligible net spend,Standard ₹100 = 1 Point,RULE-ACCRUAL-01,ACCRUAL,1,True,2025-01-01T05:30:00+05:30

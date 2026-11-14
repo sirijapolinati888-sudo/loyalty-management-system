@@ -1,0 +1,6 @@
+description,name,id,monetary_value,stock_count,points_required,is_active,created_at
+Get ₹100 off on next purchase,₹100 Discount Voucher,RWD-001,100.0,-1,100,True,2025-01-01T05:30:00+05:30
+Applicable on all items,₹250 Shopping Coupon,RWD-002,250.0,-1,250,True,2025-01-01T05:30:00+05:30
+Valid for 6 months,₹500 Gift Card,RWD-003,500.0,-1,500,True,2025-01-01T05:30:00+05:30
+Exclusive merchandise pack,₹1000 Premium Hamper,RWD-004,1000.0,-1,1000,True,2025-01-01T05:30:00+05:30
+Access to VIP lounge & goodies,₹2000 Luxury Experience,RWD-005,2000.0,-1,2000,True,2025-01-01T05:30:00+05:30

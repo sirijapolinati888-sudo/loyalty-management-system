@@ -1,0 +1,52 @@
+[
+  {
+    "anomaly_id": "ANOM-000001",
+    "issue_type": "BALANCE_MISMATCH",
+    "entity_name": "LoyaltyAccount",
+    "entity_id": "LOY-CUST-000031",
+    "expected_result": "Cached balance must match ledger sum (430)",
+    "actual_result": "Cached balance is 930",
+    "severity": "CRITICAL",
+    "explanation": "Stored loyalty account balance was corrupted by +500 points, causing mismatch with immutable ledger sum."
+  },
+  {
+    "anomaly_id": "ANOM-000002",
+    "issue_type": "OVER_REDEMPTION",
+    "entity_name": "PointsTransaction",
+    "entity_id": "PTS-2026-99990001",
+    "expected_result": "Redemption cannot exceed available points balance",
+    "actual_result": "Redeemed 525 exceeding available balance",
+    "severity": "CRITICAL",
+    "explanation": "PointsTransaction PTS-2026-99990001 spent 525 points, exceeding available balance."
+  },
+  {
+    "anomaly_id": "ANOM-000003",
+    "issue_type": "MISSING_REVERSAL",
+    "entity_name": "OrderReturn",
+    "entity_id": "RET-2026-999999",
+    "expected_result": "Points reversal transaction must exist for return RET-2026-999999",
+    "actual_result": "No reversal ledger transaction found for this return",
+    "severity": "CRITICAL",
+    "explanation": "Order return RET-2026-999999 was completed but no points reversal transaction was posted."
+  },
+  {
+    "anomaly_id": "ANOM-000004",
+    "issue_type": "DOUBLE_EXPIRY",
+    "entity_name": "PointsLot",
+    "entity_id": "LOT-2026-000003",
+    "expected_result": "Points lot must only expire once",
+    "actual_result": "Multiple expiration transactions reference lot LOT-2026-000003",
+    "severity": "CRITICAL",
+    "explanation": "Points lot LOT-2026-000003 was expired multiple times, deducting points repeatedly."
+  },
+  {
+    "anomaly_id": "ANOM-000005",
+    "issue_type": "INCORRECT_TIER",
+    "entity_name": "LoyaltyAccount",
+    "entity_id": "LOY-CUST-000027",
+    "expected_result": "Tier should be TIER-BRONZE based on qualifying net spend (5000.0)",
+    "actual_result": "Current tier is TIER-PLATINUM (calculated using gross spend: 120000.0)",
+    "severity": "WARNING",
+    "explanation": "Customer membership tier was calculated using total gross spend instead of qualifying net spend."
+  }
+]

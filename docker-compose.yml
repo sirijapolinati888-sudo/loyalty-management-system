@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yottaflex-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-loyalty_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loyalty_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-loyalty_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loyalty_user} -d ${POSTGRES_DB:-loyalty_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yottaflex-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-loyalty_user}:${POSTGRES_PASSWORD:-loyalty_secure_password}@postgres:5432/${POSTGRES_DB:-loyalty_db}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: yottaflex-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:

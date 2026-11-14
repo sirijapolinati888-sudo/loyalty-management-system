@@ -1,0 +1,121 @@
+{
+  "dataset_name": "YottaFlex.ai Synthetic Loyalty & Ledger Dataset",
+  "generation_date": "2026-11-13T14:56:59.484400+00:00",
+  "generator_version": "2.0.0-enterprise",
+  "random_seed": 20261022,
+  "configuration": {
+    "currency": "INR",
+    "spend_threshold_inr": 100.0,
+    "points_per_threshold": 1,
+    "expiry_days": 365,
+    "rounding_method": "floor"
+  },
+  "record_counts": {
+    "customers": 100,
+    "loyalty_accounts": 100,
+    "tiers": 4,
+    "rules": 1,
+    "rewards": 5,
+    "orders": 500,
+    "order_lines": 1236,
+    "points_transactions": 576,
+    "points_lots": 500,
+    "redemptions": 48,
+    "expiry_batches": 1
+  },
+  "files": {
+    "master/customers.csv": {
+      "size_bytes": 11428,
+      "sha256": "bd1f1ca51ce58b0d2ab2a03d81c3b182a6c1fa4285f895a5aacd88181345ef53"
+    },
+    "master/customers.json": {
+      "size_bytes": 23775,
+      "sha256": "7215f088bee85f23404d244f28b8452aba7da36835a41cc1f819f6a65c58985c"
+    },
+    "master/loyalty_accounts.csv": {
+      "size_bytes": 11485,
+      "sha256": "238a488cce24f2fb6eca3c2a698ac033947c7349a5e63910eb96a19dd55a916b"
+    },
+    "master/loyalty_accounts.json": {
+      "size_bytes": 40113,
+      "sha256": "fdad40c3bbb8b56b59fcd13f608e252947c8eb0d0565e5d905bff07cb2fedc6f"
+    },
+    "master/rewards.csv": {
+      "size_bytes": 600,
+      "sha256": "9d037a0b74d70e0e91fa5ae59f7f2df11f83675f538631bd20cd17fee772b101"
+    },
+    "master/rewards.json": {
+      "size_bytes": 1310,
+      "sha256": "b99ac94075c5c3d0daa682252aa24afb9306ea226f278359e7822721b0ac7194"
+    },
+    "master/rules.csv": {
+      "size_bytes": 235,
+      "sha256": "f4314c2e0265f62baa70a46739a05a9cb3364726cd17e2694d5bc584e5766348"
+    },
+    "master/rules.json": {
+      "size_bytes": 322,
+      "sha256": "0b244d58b47029deb1300123bfc7f28ded249a830a3107c9daa99f9e5c85332c"
+    },
+    "master/tiers.csv": {
+      "size_bytes": 375,
+      "sha256": "3f1f6b3b11265ebe90f7060662e60f06ce308b9609c38c6581fffe4a015c1ff8"
+    },
+    "master/tiers.json": {
+      "size_bytes": 822,
+      "sha256": "5364007a02021226a2d5fda6b441c75a6e17d0dc33988620b2a1aa2edf99290b"
+    },
+    "transactions/expiry_batches.csv": {
+      "size_bytes": 204,
+      "sha256": "9bba44b6b53427e10c0220fb3e106e90724d60c25bb8043fbedaa54eadd7a047"
+    },
+    "transactions/expiry_batches.json": {
+      "size_bytes": 271,
+      "sha256": "a1d392f747a13838bb4dd1460ccd3048caceff4e4aea3b924ec65f3807a77d7b"
+    },
+    "transactions/orders.csv": {
+      "size_bytes": 64182,
+      "sha256": "d1810a7a7ca33532aeee1e49d5bac15d1f87e664e73241eb004179f10d5c92cb"
+    },
+    "transactions/orders.json": {
+      "size_bytes": 167946,
+      "sha256": "5b9072f77466aba771c29f08e824dd86931571200b6b7a08572b6fe30532070d"
+    },
+    "transactions/points_lots.csv": {
+      "size_bytes": 70732,
+      "sha256": "37a5b3a6b8233c5f2d7a9595ac315cc8ceb4b8b4133a5276eadb3e8ba8bfb1df"
+    },
+    "transactions/points_lots.json": {
+      "size_bytes": 172112,
+      "sha256": "925aa15434a074c7b79bb2db61b92e3cd7358f2bb9ce02afe9c03d031beee211"
+    },
+    "transactions/points_transactions.csv": {
+      "size_bytes": 112178,
+      "sha256": "607ee8b7db97ec60bc10ffaaa864dc083c59c1ac0eb2485a067feb18f77a69df"
+    },
+    "transactions/points_transactions.json": {
+      "size_bytes": 296884,
+      "sha256": "5673911449022e705466f911cfe64d392f7d7eaba1c80551ff7939b7f5d968bf"
+    },
+    "transactions/redemptions.csv": {
+      "size_bytes": 4718,
+      "sha256": "f2b7e11478462467b7faa788b53b3ab9b218dbd4abcbf98f35fd0e449ec02dac"
+    },
+    "transactions/redemptions.json": {
+      "size_bytes": 14162,
+      "sha256": "82c87ad0247ed0f4db7bf5a3ed29b5ea19d307d8620f2f853380477e376063e0"
+    },
+    "ground_truth/ground_truth.csv": {
+      "size_bytes": 1409,
+      "sha256": "feee4ddb8740d6c44b90929bb4fb2dba6203a568c4e6b634900ef58cc15f2b6e"
+    },
+    "ground_truth/ground_truth.json": {
+      "size_bytes": 2270,
+      "sha256": "aeb43f75940728c43e7a434d2e79bfc3b700c6acb7547bb553430949733c2718"
+    },
+    "exports/seed_data.sql": {
+      "size_bytes": 40804,
+      "sha256": "4a1682f9b3a31087457e8335c3e2ca19282372f330870b37db9d208492deefe5"
+    }
+  },
+  "data_provenance": "100% synthetically generated with deterministic pseudorandom seed 20261022. No external personally identifiable information (PII) used."
+}
