@@ -25,10 +25,13 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
-    setLoading(true);
+  const loadData = (force = false) => {
+    // If not forcing refresh and data already exists in component, don't show blank spinner
+    if (force || !data) {
+      setLoading(true);
+    }
     setError(null);
-    LoyaltyAPI.getSummary()
+    LoyaltyAPI.getSummary(force)
       .then(setData)
       .catch((err) => {
         setError(err.message || 'Failed to load ledger telemetry');
@@ -58,7 +61,7 @@ export const DashboardPage: React.FC = () => {
         <h3 className="font-bold text-slate-900 text-sm">Failed to Connect to Analytics Telemetry</h3>
         <p className="text-xs text-rose-600">{error}</p>
         <button
-          onClick={loadData}
+          onClick={() => loadData(true)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors"
         >
           Retry Connection
@@ -271,7 +274,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <button
-            onClick={loadData}
+            onClick={() => loadData(true)}
             style={{
               background: 'linear-gradient(180deg, #7161ef 0%, #5448ea 100%)',
               boxShadow: '0 3px 6px -1px rgba(99, 85, 246, 0.4), inset 0 1.5px 1px rgba(255, 255, 255, 0.4), inset 0 -1.5px 2px rgba(0, 0, 0, 0.2)'

@@ -18,10 +18,10 @@ def verify_customer_access(customer_id: str, current_user: Optional[User]):
                 detail="Customer data isolation violation: You cannot access other customers' records."
             )
 
-@router.get("", response_model=List[CustomerResponse])
+@router.get("")
 def get_customers(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(15, ge=1, le=100),
     search: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
@@ -29,13 +29,18 @@ def get_customers(
     # If customer role, only return self
     if current_user and current_user.role == UserRole.CUSTOMER:
         c = db.query(Customer).filter(Customer.id == current_user.customer_id).first()
-        return [c] if c else []
+        items = [CustomerResponse.model_validate(c)] if c else []
+        return {"items": items, "total": 1 if c else 0, "skip": 0, "limit": limit}
 
     query = db.query(Customer)
     if search:
         search_f = f"%{search}%"
         query = query.filter((Customer.first_name.ilike(search_f)) | (Customer.last_name.ilike(search_f)) | (Customer.email.ilike(search_f)) | (Customer.id.ilike(search_f)))
-    return query.offset(skip).limit(limit).all()
+    
+    total = query.count()
+    customers = query.offset(skip).limit(limit).all()
+    items = [CustomerResponse.model_validate(c) for c in customers]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(

@@ -7,6 +7,7 @@ import {
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15; // More compact rows per page
@@ -18,11 +19,25 @@ export const CustomersPage: React.FC = () => {
   const [txns, setTxns] = useState<any[]>([]);
 
   useEffect(() => {
-    LoyaltyAPI.getCustomers({ search }).then((data) => {
-      setCustomers(data || []);
-      setCurrentPage(1);
+    const skip = (currentPage - 1) * pageSize;
+    LoyaltyAPI.getCustomers({ skip, limit: pageSize, search }).then((data) => {
+      if (data && typeof data === 'object' && 'items' in data) {
+        setCustomers(data.items || []);
+        setTotalCount(data.total || 0);
+      } else if (Array.isArray(data)) {
+        setCustomers(data);
+        setTotalCount(data.length);
+      } else {
+        setCustomers([]);
+        setTotalCount(0);
+      }
     });
-  }, [search]);
+  }, [search, currentPage]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setCurrentPage(1);
+  };
 
   const viewDetails = (c: any) => {
     setSelectedCust(c);
@@ -32,11 +47,10 @@ export const CustomersPage: React.FC = () => {
   };
 
   // Pagination calculation
-  const totalCount = customers.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalCount);
-  const currentCustomers = customers.slice(startIndex, endIndex);
+  const currentCustomers = customers;
 
   return (
     <div className="space-y-3.5">
@@ -73,7 +87,7 @@ export const CustomersPage: React.FC = () => {
               type="text"
               placeholder="Search by name, email or ID..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-9 pr-3.5 py-1.5 bg-[#f4f6fc] border-t border-t-slate-300/80 border-l border-l-slate-300/70 border-b border-b-white border-r border-r-white rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6355f6]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),0_1px_1px_rgba(255,255,255,0.8)] transition-all"
             />
           </div>

@@ -34,14 +34,61 @@ api.interceptors.response.use(
   }
 );
 
+// Persistent Tab Session Cache Helper
+export const TabCache = {
+  get: (key: string) => {
+    try {
+      const item = sessionStorage.getItem(`yottaflex_cache_${key}`);
+      if (!item) return null;
+      const parsed = JSON.parse(item);
+      // Optional 5-minute expiration
+      if (Date.now() - parsed.timestamp > 5 * 60 * 1000) {
+        sessionStorage.removeItem(`yottaflex_cache_${key}`);
+        return null;
+      }
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  },
+  set: (key: string, data: any) => {
+    try {
+      sessionStorage.setItem(`yottaflex_cache_${key}`, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch (e) {
+      console.warn('TabCache quota exceeded or error:', e);
+    }
+  },
+  invalidate: (key?: string) => {
+    if (key) {
+      sessionStorage.removeItem(`yottaflex_cache_${key}`);
+    } else {
+      Object.keys(sessionStorage)
+        .filter(k => k.startsWith('yottaflex_cache_'))
+        .forEach(k => sessionStorage.removeItem(k));
+    }
+  }
+};
+
 export const LoyaltyAPI = {
   // Auth
   login: (data: { email: string; password: string }) => api.post('/auth/login', data).then(r => r.data),
-  logout: () => api.post('/auth/logout').then(r => r.data),
+  logout: () => {
+    TabCache.invalidate();
+    return api.post('/auth/logout').then(r => r.data);
+  },
   getMe: () => api.get('/auth/me').then(r => r.data),
 
   // Analytics
-  getSummary: () => api.get('/analytics/summary').then(r => r.data),
+  getSummary: (forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = TabCache.get('summary');
+      if (cached) return Promise.resolve(cached);
+    }
+    return api.get('/analytics/summary').then(r => {
+      TabCache.set('summary', r.data);
+      return r.data;
+    });
+  },
   
   // Customers
   getCustomers: (params?: { skip?: number; limit?: number; search?: string }) => 

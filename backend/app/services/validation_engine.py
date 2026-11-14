@@ -5,7 +5,7 @@ import json
 import pandas as pd
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
 from app.db.session import SessionLocal
@@ -39,20 +39,29 @@ class ValidationEngine:
         total_records_checked = total_customers + total_accounts + total_orders + total_txns
 
         # 2. Check BALANCE_MISMATCH
-        # Cached account balance vs sum of posted ledger transactions
-        accounts = self.db.query(LoyaltyAccount).all()
-        for acc in accounts:
-            recon = LedgerService.reconcile_account(self.db, acc.id)
-            if not recon["is_reconciled"]:
-                detected_anomalies.append({
-                    "issue_type": AnomalyIssueType.BALANCE_MISMATCH.value,
-                    "entity_name": "LoyaltyAccount",
-                    "entity_id": acc.id,
-                    "expected_result": f"Cached balance must match ledger sum ({recon['ledger_balance']})",
-                    "actual_result": f"Cached balance is {recon['cached_balance']}",
-                    "severity": AnomalySeverity.CRITICAL.value,
-                    "explanation": f"Discrepancy of {recon['discrepancy']} points detected between cached account balance and immutable ledger sum."
-                })
+        # Fast SQL Aggregation: compare cached_balance with sum of posted transactions directly in DB
+        mismatched_rows = self.db.execute(
+            text("""
+            SELECT a.id, a.cached_balance, COALESCE(SUM(t.points_amount), 0) as ledger_balance
+            FROM loyalty_accounts a
+            LEFT JOIN points_transactions t ON t.loyalty_account_id = a.id AND t.status = 'POSTED'
+            GROUP BY a.id, a.cached_balance
+            HAVING a.cached_balance != COALESCE(SUM(t.points_amount), 0)
+            """)
+        ).fetchall()
+
+        for row in mismatched_rows:
+            acc_id, cached_bal, ledger_bal = row[0], row[1], row[2]
+            diff = cached_bal - ledger_bal
+            detected_anomalies.append({
+                "issue_type": AnomalyIssueType.BALANCE_MISMATCH.value,
+                "entity_name": "LoyaltyAccount",
+                "entity_id": acc_id,
+                "expected_result": f"Cached balance must match ledger sum ({ledger_bal})",
+                "actual_result": f"Cached balance is {cached_bal}",
+                "severity": AnomalySeverity.CRITICAL.value,
+                "explanation": f"Discrepancy of {diff} points detected between cached account balance and immutable ledger sum."
+            })
 
         # 3. Check OVER_REDEMPTION
         # Find any redemption transaction where points exceeded available balance or resulting balance was negative
@@ -124,6 +133,7 @@ class ValidationEngine:
         # 6. Check INCORRECT_TIER
         # Check if tier assignment violates qualifying_net_spend thresholds
         tiers = {t.id: t for t in self.db.query(Tier).all()}
+        accounts = self.db.query(LoyaltyAccount).all()
         for acc in accounts:
             spend = acc.qualifying_net_spend
             expected_tier = None
