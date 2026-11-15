@@ -613,15 +613,15 @@ docker-compose down -v
 
 ## 20. Project & Company Walkthrough Videos
 
-The repository includes two dedicated video recordings in the `Videos/` directory (tracked and uploaded via Git LFS), providing a complete visual demonstration of the implementation and company background:
+The repository includes two dedicated video presentations located in the `Videos/` directory (tracked and uploaded via Git LFS), generated using Claude:
 
-| Video Category | File Path | Detailed Description & Covered Workflows |
+| Video Category | File Path | Detailed Description |
 | :--- | :--- | :--- |
 | 🎬 **Project Walkthrough** *(Full System Demo)* | **`Videos/Loyalty Points Management System.mp4`** | **Comprehensive End-to-End Application Walkthrough**: Demonstrates the live working solution for the **Loyalty Points Management** system across all 4 primary actor workflows (Operations Manager, Store/Warehouse Operator, Merchandising Analyst, Customer). Showcases order creation, eligible net spend calculation, itemized returns with automatic proportional points reversals, concurrency-safe redemptions with FIFO lot depletion, batch expiration execution, and live mathematical validation with anomaly detection telemetry. |
-| 🏢 **Company & Challenge Overview** *(YottaFlex.ai)* | **`Videos/About YottaFlex.mp4`** | **Company Background, Problem Context & Architecture Overview**: Details the **YottaFlex.ai Associate AI Forward Deployed Engineer** challenge requirements. Explains the business context behind auditable loyalty ledgers, the core architectural invariants (append-only ledger, double-spending prevention via pessimistic locking, deterministic FIFO lot tracking), the synthetic dataset pipeline (20,000 customers, 100,000 orders, 300,000 transactions), and cryptographic bit-for-bit reproducibility verification. |
+| 🏢 **About the Company** *(YottaFlex.ai)* | **`Videos/About YottaFlex.mp4`** | **Purely About YottaFlex.ai**: Dedicated corporate and organizational presentation covering YottaFlex.ai—its mission, technology focus, AI-driven enterprise solutions, industry impact, core values, and technological ecosystem. |
 
-> [!TIP]
-> Both video files are tracked with **Git LFS** and can be viewed directly after cloning or by playing them locally using any standard media player (VLC, Windows Media Player, QuickTime).
+> [!NOTE]
+> Both presentation and walkthrough videos were crafted and produced using **Claude**, and are tracked with **Git LFS**. They can be viewed directly after cloning or played locally using any standard media player (VLC, Windows Media Player, QuickTime).
 
 ---
 
