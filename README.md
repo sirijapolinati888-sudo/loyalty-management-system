@@ -16,7 +16,10 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 
 - [1. Business Context & Problem Statement](#1-business-context--problem-statement)
 - [2. Primary Actors & System Roles](#2-primary-actors--system-roles)
-- [3. Key Architectural Features](#3-key-architectural-features)
+- [3. System Architecture & Component Design](#3-system-architecture--component-design)
+  - [3.1 High-Level Architecture Diagram](#31-high-level-architecture-diagram)
+  - [3.2 Component Flow & Data Lifecycle](#32-component-flow--data-lifecycle)
+  - [3.3 Key Architectural Principles](#33-key-architectural-principles)
 - [4. Domain Entities & Relational Data Model](#4-domain-entities--relational-data-model)
 - [5. ID & Nomenclature Conventions](#5-id--nomenclature-conventions)
 - [6. Synthetic Data Generation Engine](#6-synthetic-data-generation-engine)
@@ -25,7 +28,11 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 - [9. Cryptographic Bit-for-Bit Reproducibility](#9-cryptographic-bit-for-bit-reproducibility)
 - [10. User Roles, Security & Authentication](#10-user-roles-security--authentication)
 - [11. Technology Stack](#11-technology-stack)
-- [12. Project Structure](#12-project-structure)
+- [12. Comprehensive Code & Directory Structure](#12-comprehensive-code--directory-structure)
+  - [12.1 Detailed Repository Layout](#121-detailed-repository-layout)
+  - [12.2 Backend Architecture & Layered Responsibilities](#122-backend-architecture--layered-responsibilities)
+  - [12.3 Frontend Component Architecture](#123-frontend-component-architecture)
+  - [12.4 Synthetic Data & Audit Verification Pipeline](#124-synthetic-data--audit-verification-pipeline)
 - [13. Installation & Local Setup](#13-installation--local-setup)
 - [14. Database Setup & Seeding (PostgreSQL & pgAdmin)](#14-database-setup--seeding-postgresql--pgadmin)
 - [15. Environment Configuration](#15-environment-configuration)
@@ -67,7 +74,72 @@ The platform provides dedicated workflows, navigation routes, and security bound
 
 ---
 
-## 3. Key Architectural Features
+## 3. System Architecture & Component Design
+
+The platform is engineered around a clean layered architecture that separates presentation, API routing, transactional business logic, data persistence, and mathematical verification.
+
+### 3.1 High-Level Architecture Diagram
+
+```
+                                 ┌────────────────────────────────────────────────────────┐
+                                 │                 CLIENT PRESENTATION LAYER              │
+                                 │       React 19 + TypeScript + Vite + Tailwind CSS      │
+                                 │   (Bulged 3D Glassmorphism UI, Responsive Viewports)   │
+                                 └───────────────────────────┬────────────────────────────┘
+                                                             │
+                                                             │ HTTPS / REST (JSON + JWT)
+                                                             ▼
+                                 ┌────────────────────────────────────────────────────────┐
+                                 │               FASTAPI GATEWAY & SECURITY               │
+                                 │  • OAuth2 Password Bearer  • JWT Token Rotation        │
+                                 │  • Role-Based Access Ctrl  • CORS & Request Middleware │
+                                 └───────────────────────────┬────────────────────────────┘
+                                                             │
+                  ┌──────────────────────────────────────────┴─────────────────────────────────────────┐
+                  ▼                                          ▼                                         ▼
+   ┌─────────────────────────────┐            ┌─────────────────────────────┐           ┌─────────────────────────────┐
+   │    TRANSACTIONAL LEDGER     │            │    BUSINESS LOGIC ENGINE    │           │    VALIDATION & AUDIT       │
+   │       (ledger_service)      │            │   (business_logic.py)       │           │   (validation_engine.py)    │
+   ├─────────────────────────────┤            ├─────────────────────────────┤           ├─────────────────────────────┤
+   │ • Signed Financial Events   │            │ • Net Spend Calculation     │           │ • Mathematical Sum Checks   │
+   │ • Append-Only Ledger        │            │ • Multiplier Application    │           │ • Referential Traceability  │
+   │ • FIFO Lot Depletion Engine │            │ • Proportional Reversals    │           │ • F1 Benchmarking Engine    │
+   │ • SELECT ... FOR UPDATE     │            │ • Dynamic Tier Progression  │           │ • Anomaly Classification    │
+   └──────────────┬──────────────┘            └──────────────┬──────────────┘           └──────────────┬──────────────┘
+                  │                                          │                                         │
+                  └──────────────────────────────────────────┼─────────────────────────────────────────┘
+                                                             │ SQLAlchemy 2.0 ORM
+                                                             ▼
+                                 ┌────────────────────────────────────────────────────────┐
+                                 │                DATA PERSISTENCE LAYER                  │
+                                 │          PostgreSQL 16 Enterprise Relational DB        │
+                                 │  • Master Tables (Customers, Accounts, Tiers, Rules)   │
+                                 │  • Ledger & Batches (Transactions, Lots, Expirations)  │
+                                 │  • Isolated Ground Truth Store (Audit Benchmarking)    │
+                                 └────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Component Flow & Data Lifecycle
+
+1. **Transaction Ingestion & Net Spend Calculation**:
+   - Order events are ingested with itemized line items.
+   - The Business Logic Engine excludes ineligible SKUs (e.g., gift cards, tax, shipping) to determine **qualifying net spend**.
+   - Accrual rules apply the customer's current tier multiplier to award points.
+2. **Double-Entry Style Ledger Appending**:
+   - Points are posted to `points_transactions` with an immutable sequence and transaction ID (`PTS-2026-XXXXXXXX`).
+   - Positive points are assigned to a new FIFO lot in `points_lots` with an explicit expiration date.
+3. **Pessimistic Concurrency During Redemptions**:
+   - When a redemption occurs, the customer's `loyalty_accounts` record is locked with `SELECT ... FOR UPDATE`.
+   - The ledger service verifies available points and drains the earliest-expiring active lots in strict FIFO order.
+   - Balances are updated within the same atomic transaction, eliminating race conditions and double-spending.
+4. **Proportional Returns & Clawback**:
+   - When items are returned, the system calculates the exact ratio of the returned items against the original order.
+   - A reversal ledger entry (`POINTS_REVERSED`) is recorded with a direct foreign reference to the original accrual.
+5. **Periodic Expiration & Anomaly Detection**:
+   - Automated expiration batches identify expired unconsumed lots and record negative ledger events.
+   - The Independent Validation Engine computes raw sums $\sum \text{ledger}$ vs `cached_balance` and scans for negative scenario triggers.
+
+### 3.3 Key Architectural Principles
 
 - **Append-Only Immutable Ledger (`points_transactions`)**: Every points movement (Accrual, Redemption, Reversal, Expiration) is stored as a signed, sequence-tracked ledger record. History is never overwritten.
 - **Deterministic FIFO Point Lot Consumption (`points_lots`)**: Earliest-expiring points are consumed first for transparent redemption and deterministic expiration.
@@ -202,46 +274,144 @@ Verified via `scripts/verify_reproducibility.py`:
 
 ---
 
-## 12. Project Structure
+## 12. Comprehensive Code & Directory Structure
+
+The project follows a clean domain-driven structure, enforcing separation of concerns between HTTP transport, business transactions, database modeling, and frontend presentation.
+
+### 12.1 Detailed Repository Layout
 
 ```
 loyalty-management-system/
-├── backend/
-│   ├── alembic/                # Database migrations
+├── backend/                               # High-Performance FastAPI Backend
+│   ├── alembic/                           # Database Schema Migrations
+│   │   ├── env.py                         # Alembic environment and model metadata
+│   │   └── versions/                      # Version-controlled migration revisions
 │   ├── app/
-│   │   ├── api/v1/             # REST endpoints (auth, customers, orders, ledger, etc.)
-│   │   ├── core/               # Security, JWT tokens, RBAC dependencies
-│   │   ├── db/                 # SQLAlchemy session and engine management
-│   │   ├── models/             # Relational entities and enum definitions
-│   │   ├── schemas/            # Pydantic request/response schemas
-│   │   └── services/           # Business logic, ledger transactions, validation engine
-│   ├── init_db.py              # Database table initialization script
-│   └── requirements.txt        # Backend dependencies
-├── frontend/
+│   │   ├── api/v1/                        # API Version 1 Gateway
+│   │   │   ├── endpoints/                 # Modular Resource Endpoints
+│   │   │   │   ├── accounts.py            # Account balances and customer loyalty cards
+│   │   │   │   ├── analytics.py           # Program KPIs, tier distributions, spend charts
+│   │   │   │   ├── anomalies.py           # Anomaly inspector and classification reports
+│   │   │   │   ├── auth.py                # JWT login, refresh rotation, current user
+│   │   │   │   ├── customers.py           # Customer registry and detailed account history
+│   │   │   │   ├── expiration.py          # FIFO batch expiration execution & simulation
+│   │   │   │   ├── exports.py             # Data export endpoints (CSV, JSON, Manifests)
+│   │   │   │   ├── generator.py           # Synthetic dataset generator execution & status
+│   │   │   │   ├── health.py              # Liveness and database connectivity probes
+│   │   │   │   ├── orders.py              # Order processing, itemized returns & refunds
+│   │   │   │   ├── redemptions.py         # Reward redemptions with pessimistic locking
+│   │   │   │   ├── tiers.py               # Tier configuration and progression thresholds
+│   │   │   │   ├── transactions.py        # Append-only transaction ledger & lot inspector
+│   │   │   │   └── validation.py          # Mathematical balance reconciliation & metrics
+│   │   │   └── api.py                     # Centralized API router assembling all modules
+│   │   ├── core/                          # Cross-Cutting Infrastructure Concerns
+│   │   │   ├── config.py                  # Pydantic BaseSettings, env parsing & app config
+│   │   │   └── security.py                # Bcrypt password hashing, JWT creation & RBAC
+│   │   ├── db/                            # Database Connection & Lifecycle
+│   │   │   └── session.py                 # SQLAlchemy 2.0 Engine, SessionLocal, get_db
+│   │   ├── models/                        # SQLAlchemy Declarative Relational Models
+│   │   │   ├── entities.py                # Core database tables (Customer, Order, Ledger...)
+│   │   │   └── enums.py                   # Business Enums (TransactionType, AnomalyType...)
+│   │   ├── schemas/                       # Pydantic Schemas for DTOs & Validation
+│   │   │   └── ...                        # Request validation and JSON serialization
+│   │   ├── services/                      # Pure Business Logic & Domain Services
+│   │   │   ├── business_logic.py          # Net spend rules, tier math, proportional returns
+│   │   │   ├── generation_job.py          # Background streaming pipeline runner
+│   │   │   ├── ledger_service.py          # Append-only ledger transactions & FIFO lots
+│   │   │   └── validation_engine.py       # Independent mathematical reconciliation engine
+│   │   └── main.py                        # FastAPI application instance, CORS, routers
+│   ├── .env.example                       # Documented environment template
+│   ├── Dockerfile                         # Backend container definition
+│   ├── init_db.py                         # Standalone database initialization script
+│   ├── main.py                            # Root Uvicorn launcher
+│   └── requirements.txt                   # Pinned backend dependencies
+├── frontend/                              # Modern React 19 + TypeScript Single Page App
+│   ├── public/                            # Static assets and favicon
 │   ├── src/
-│   │   ├── components/         # Reusable UI components (Layout, CustomSelect, etc.)
-│   │   ├── context/            # React AuthContext and JWT state management
-│   │   ├── pages/              # Application pages (Dashboard, Orders, Ledger, Tiers, etc.)
-│   │   └── services/           # Axios API client
-│   ├── package.json            # Frontend npm configuration
-│   └── vite.config.ts          # Vite build configuration
-├── data_generator/
-│   ├── generate_data.py        # Deterministic synthetic data generator (Seed: 20261022)
-│   └── inject_anomalies.py     # Deliberate business anomaly injector
-├── data/
-│   ├── master/                 # Master entity CSV/JSON files
-│   ├── transactions/           # Transactional CSV/JSON files
-│   ├── ground_truth/           # Isolated ground truth for anomaly benchmarking
-│   └── exports/                # SQL seeds and provenance manifests
-├── docs/                       # Technical documentation and audit reports
-├── scripts/
-│   ├── export_sql_and_manifest.py # SQL seed export and SHA-256 manifest generator
-│   ├── generate_full_dataset.py   # Full-scale dataset pipeline runner
-│   ├── seed_users.py              # Demo user provisioning script
-│   └── verify_reproducibility.py  # Two-run cryptographic reproducibility checker
-├── docker-compose.yml          # Multi-container deployment configuration
-└── README.md
+│   │   ├── components/                    # Reusable UI Component Library
+│   │   │   ├── CustomSelect.tsx           # Glassmorphism dark-themed select dropdown
+│   │   │   ├── Layout.tsx                 # App layout with sticky sidebar and navbar
+│   │   │   ├── Logo.tsx                   # Dynamic responsive branding component
+│   │   │   ├── ProtectedRoute.tsx         # Multi-role route guard and auth redirector
+│   │   │   └── ui.tsx                     # Portal-backed Modal, Badge, StatCard, Table
+│   │   ├── context/                       # State Management
+│   │   │   └── AuthContext.tsx            # Reactive JWT auth provider & user role state
+│   │   ├── pages/                         # Core Application Views
+│   │   │   ├── AnomaliesPage.tsx          # Real-time ledger audit and anomaly analysis
+│   │   │   ├── CustomersPage.tsx          # Customer directory with detailed ledger drilldown
+│   │   │   ├── DashboardPage.tsx          # Program health KPIs, charts & recent transactions
+│   │   │   ├── ExpirationPage.tsx         # FIFO batch expiration trigger and lot history
+│   │   │   ├── GeneratorPage.tsx          # Dual-scale synthetic data generation manager
+│   │   │   ├── LedgerPage.tsx             # Append-only immutable financial audit ledger
+│   │   │   ├── LoginPage.tsx              # Split-pane glassmorphic authentication view
+│   │   │   ├── OrdersPage.tsx             # Order history with interactive item-level returns
+│   │   │   ├── RedemptionsPage.tsx        # Reward catalogue and concurrency-safe redemption
+│   │   │   ├── TiersPage.tsx              # Membership tiers and qualifying multiplier rules
+│   │   │   └── ValidationPage.tsx         # Independent reconciliation & statistical metrics
+│   │   ├── services/                      # Network & API Integration
+│   │   │   └── api.ts                     # Axios client with automatic Bearer token headers
+│   │   ├── App.tsx                        # Root routing configuration (React Router v7)
+│   │   ├── index.css                      # Tailwind CSS v4 styling & 3D bulged card effects
+│   │   └── main.tsx                       # React DOM entry point
+│   ├── package.json                       # Frontend dependencies and npm scripts
+│   ├── tsconfig.json                      # TypeScript compiler configuration
+│   └── vite.config.ts                     # Vite build and proxy configuration
+├── data_generator/                        # Deterministic Synthetic Data Pipeline
+│   ├── generate_data.py                   # Master data & baseline transaction generator
+│   └── inject_anomalies.py                # Labeled edge case injector (5 core anomalies)
+├── data/                                  # Versioned Datasets & Reproducibility Artifacts
+│   ├── exports/                           # seed_data.sql and manifest.json with SHA-256
+│   ├── ground_truth/                      # Isolated ground_truth.json (anomaly labels)
+│   ├── master/                            # Customers, tiers, rules, rewards CSV/JSON
+│   └── transactions/                      # Orders, order_lines, ledger transactions CSV/JSON
+├── docs/                                  # Technical & Architectural Documentation
+│   ├── API_DOCUMENTATION.md               # Complete REST API specifications
+│   ├── DATA_DICTIONARY.md                 # Entity specifications, types & check constraints
+│   ├── RECONCILIATION_REPORT.md           # Independent mathematical verification report
+│   └── SYSTEM_ARCHITECTURE.md             # In-depth architectural whitepaper
+├── scripts/                               # Operational Tooling & Maintenance
+│   ├── export_sql_and_manifest.py         # Exports PostgreSQL SQL seeds and hash manifests
+│   ├── generate_full_dataset.py           # 20K customer / 300K transaction runner
+│   ├── seed_users.py                      # Demo personas provisioning script
+│   └── verify_reproducibility.py          # Cryptographic SHA-256 reproducibility checker
+├── Videos/                                # Walkthrough Video Demonstrations (Git LFS)
+│   ├── About YottaFlex.mp4                # Architecture & business requirement overview
+│   └── Loyalty Points Management System.mp4 # Live application UI & ledger audit demo
+├── docker-compose.yml                     # Multi-container orchestration (App + Postgres)
+└── README.md                              # Comprehensive project documentation
 ```
+
+### 12.2 Backend Architecture & Layered Responsibilities
+
+1. **API Layer (`app/api/v1/endpoints/`)**:
+   - Handles HTTP serialization, query filtering, pagination, and status codes.
+   - Enforces RBAC dependencies via `Depends(get_current_active_user)` and `require_role(...)`.
+2. **Business Domain Services (`app/services/`)**:
+   - `ledger_service.py`: Encapsulates all double-entry points accounting. Exposes atomic methods for `accrue_points()`, `redeem_points()`, `reverse_points()`, and `expire_lots()`.
+   - `business_logic.py`: Evaluates net spend eligibility, tier qualifications, and multiplier computations.
+   - `validation_engine.py`: Performs non-intrusive mathematical sum verification across all customer accounts.
+3. **Data Access & Models (`app/models/` & `app/db/`)**:
+   - Declarative SQLAlchemy models enforce foreign keys, composite unique constraints, check constraints, and relationship cascades.
+
+### 12.3 Frontend Component Architecture
+
+1. **State & Context (`context/AuthContext.tsx`)**:
+   - Manages token storage, user lifecycle, and role permissions.
+   - Automatically injects JWT Bearer tokens into all outgoing Axios requests.
+2. **Routing & Guards (`components/ProtectedRoute.tsx`)**:
+   - Restricts sensitive routes (e.g., Anomaly Inspector to Operations, Tier Setup to Analysts) and handles automatic redirection for Customer logins.
+3. **Component Reusability (`components/ui.tsx`)**:
+   - Centralizes responsive modals rendered via `ReactDOM.createPortal(..., document.body)` with background scroll locking.
+   - Implements custom accessibility-compliant select elements and 3D bulged KPI stat cards.
+
+### 12.4 Synthetic Data & Audit Verification Pipeline
+
+1. **Deterministic Master Seeding (`data_generator/generate_data.py`)**:
+   - Generates parents (Customers, Tiers, Rules) followed by dependent transactional children (Orders, Ledger, Lots).
+2. **Controlled Anomaly Injection (`data_generator/inject_anomalies.py`)**:
+   - Injects edge cases into the dataset while outputting expected outcomes strictly to `data/ground_truth/ground_truth.json`.
+3. **Bit-for-Bit Reproducibility Validator (`scripts/verify_reproducibility.py`)**:
+   - Validates that running the generation pipeline twice with seed `20261022` produces identical cryptographic hashes.
 
 ---
 
