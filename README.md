@@ -35,6 +35,8 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 - [19. Verification & Quality Assurance](#19-verification--quality-assurance)
 - [20. Technical Documentation References](#20-technical-documentation-references)
 - [21. Prompts Used for Building the Project](#21-prompts-used-for-building-the-project)
+  - [Phase A: System Architecture & Feature Engineering Prompts](#phase-a-system-architecture--feature-engineering-prompts)
+  - [Phase B: Real-World Debugging, Error Resolution & Edge-Case Prompts](#phase-b-real-world-debugging-error-resolution--edge-case-prompts)
 
 ---
 
@@ -454,11 +456,11 @@ Detailed technical guides and compliance evidence are maintained in the `docs/` 
 
 ## 21. Prompts Used for Building the Project
 
-The entire solution was built step-by-step using precise, role-focused engineering prompts designed directly to satisfy each instruction of the **YottaFlex.ai Associate AI Forward Deployed Engineer Code Challenge**. 
-
-Below are the exact structured prompts utilized across all phases of the project lifecycle:
+The entire solution was built and refined step-by-step using precise, role-focused engineering prompts. Below is a structured log that includes both **Architecture & Feature Prompts** (happy paths) and **Real-World Debugging Prompts** (handling runtime crashes, WatchFiles loops, CSS stacking issues, concurrency deadlocks, and multi-scrollbar conflicts).
 
 ---
+
+### Phase A: System Architecture & Feature Engineering Prompts
 
 ### Step 1: Comprehensive Data Dictionary & Schema Specification
 ```text
@@ -597,4 +599,77 @@ Provide automated Swagger UI at `/api/v1/docs`, health checks, and secure error 
    - TC-ANOM-02 (Ledger Invariant): Assert account.cached_balance == SUM(points_transactions.points_amount) across all valid accounts.
 4. Role-Based Security Test Cases:
    - TC-SEC-01 (Access Isolation): Assert Store Operator cannot access admin tier configurations (/tiers), Analyst cannot trigger batch expirations, and Customers can only read their own customer_id ledger."
+```
+
+---
+
+### Phase B: Real-World Debugging, Error Resolution & Edge-Case Prompts
+
+During local development, deployment, and stress testing, several real-world runtime bugs, platform idiosyncrasies, and UI edge cases were encountered. Below are the actual prompt templates used to diagnose root causes and generate production-grade fixes:
+
+#### Debugging Prompt 1: Uvicorn Infinite Reload Loop on Cloud-Synced / Virtualenv Folders
+```text
+"Error Diagnosis:
+When running `python main.py` or `uvicorn app.main:app --reload` on Windows inside a cloud-synced directory (OneDrive), WatchFiles enters an infinite reload loop, detecting continuous filesystem touches in `venv/Lib/site-packages/pandas/tests/...` and crashing with a multiprocessing KeyboardInterrupt.
+Task:
+Diagnose why Uvicorn is reloading non-stop. Modify the startup configuration in `backend/main.py` and root `main.py` to restrict the WatchFiles watcher exclusively to the application codebase directory (`reload_dirs=[str(backend_dir / 'app')]`), ignoring `venv`, temporary test caches, and cloud-sync metadata."
+```
+
+#### Debugging Prompt 2: Modal Pushed to Bottom of Viewport (CSS Transform Stacking Context)
+```text
+"Error Diagnosis:
+In `CustomersPage.tsx`, clicking 'View' renders the inspection card at the bottom of the screen instead of the vertical and horizontal center. The parent page container uses a CSS entrance animation (`.page-enter { animation: fade-up 0.55s }`) with `transform: translateY(...)`. In CSS, any transformed parent creates a new containing block, breaking `fixed inset-0` on child elements and trapping the modal relative to the scrolled content height.
+Task:
+Refactor the `Modal` component in `ui.tsx` to use React Portals (`createPortal(..., document.body)`). Ensure the modal mounts cleanly to `document.body` outside the transformed container, and apply `fixed inset-0 lg:left-[264px] flex items-center justify-center` so it centers reliably in the content viewport without overlapping the sidebar on all display sizes."
+```
+
+#### Debugging Prompt 3: Triple Scrollbar Conflict & Background Page Bleed
+```text
+"Error Diagnosis:
+When the customer inspection modal opens, three simultaneous scrollbars appear:
+1. The outer page scrollbar.
+2. The modal panel container (`.modal-panel { overflow-y: auto }`).
+3. The nested inner table container (`.max-h-72 { overflow-y: auto }`).
+Furthermore, scrolling the mouse wheel inside the modal also scrolls the background table behind the dimmed backdrop.
+Task:
+1. Implement a scroll lock inside `Modal`: on mount, set `overflow: hidden` on both `document.body` and `#app-main-container`, restoring original styles on cleanup.
+2. Flatten the inner table container in `CustomersPage.tsx` so only the single modal body (`flex-1 overflow-y-auto`) handles scrolling, guaranteeing a clean single scrollbar."
+```
+
+#### Debugging Prompt 4: Text Truncation (`...`) & Obstructive Decorative Glyphs in Anomaly Modal
+```text
+"Error Diagnosis:
+In `AnomaliesPage.tsx`, the entity identifier card displays truncated dots (`LoyaltyAccount · LOY-CUST...`) because of an aggressive `truncate` CSS class on long compound IDs. Additionally, a decorative circular down-arrow (`<ArrowRight className='rotate-90' />`) floats between the Expected and Actual cards, obstructing readability and causing visual clutter.
+Task:
+1. Replace `truncate` with `break-all` on the entity badge so full zero-padded identifiers (e.g., `LOY-CUST-000001`) are completely readable.
+2. Remove the decorative down-arrow badge completely and adjust grid gaps so Expected and Actual comparison cards sit cleanly without overlapping elements."
+```
+
+#### Debugging Prompt 5: Login Page Scrollbar Elimination on Standard Screens
+```text
+"Error Diagnosis:
+The login page container uses `min-h-screen`, causing vertical scrollbars to appear on 1080p and laptop screens due to loose element padding, large title margins, and demo account card spacing.
+Task:
+Tighten vertical spacing in `LoginPage.tsx`: change container to `h-screen overflow-hidden`, reduce heading margins, scale down demo button paddings, and adjust branding tile heights so the entire login card, input fields, demo persona tiles, and footer badges fit comfortably within 100vh with zero scrolling."
+```
+
+#### Debugging Prompt 6: Concurrency Race Conditions & Lost Updates during Points Redemption
+```text
+"Error Diagnosis:
+Simultaneous redemption API calls on the same customer account result in negative balances and duplicate lot consumption due to standard uncoordinated SQLAlchemy read queries (`db.query(LoyaltyAccount).filter_by(id=id).first()`).
+Task:
+Implement pessimistic row-level locking using `with_for_update()` in SQLAlchemy:
+1. Acquire an exclusive row lock on `LoyaltyAccount` before checking available balance.
+2. Query active FIFO lots (`PointsLot`) ordered by `expires_at.asc()` with `with_for_update()` to serialize concurrent deductions.
+3. If balance < requested points, roll back immediately with an HTTP 400 'Insufficient points balance' error, logging a `RedemptionAttempt` audit event."
+```
+
+#### Debugging Prompt 7: Frontend Build Failure from Unused TypeScript Imports
+```text
+"Error Diagnosis:
+Running `npm run build` fails during `tsc -b` with:
+`src/pages/AnomaliesPage.tsx(3,79): error TS6133: 'ArrowRight' is declared but its value is never read.`
+Vite build aborts with non-zero exit code.
+Task:
+Audit all imports in `frontend/src/pages/AnomaliesPage.tsx`, remove unused icon imports (`ArrowRight`), verify strict TypeScript compilation passes with zero warnings, and run `npx vite build` to ensure assets compile into production bundles cleanly."
 ```
