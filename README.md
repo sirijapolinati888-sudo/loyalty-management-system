@@ -40,7 +40,7 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 - [17. REST API Reference](#17-rest-api-reference)
 - [18. Docker Deployment](#18-docker-deployment)
 - [19. Verification & Quality Assurance](#19-verification--quality-assurance)
-- [20. Demonstration Videos & Walkthroughs](#20-demonstration-videos--walkthroughs)
+- [20. Project & Company Walkthrough Videos](#20-project--company-walkthrough-videos)
 - [21. Technical Documentation References](#21-technical-documentation-references)
 - [22. Prompts Used for Building the Project](#22-prompts-used-for-building-the-project)
   - [Phase A: System Architecture & Feature Engineering Prompts](#phase-a-system-architecture--feature-engineering-prompts)
@@ -570,7 +570,7 @@ Key API routes:
 
 ---
 
-## 17. Docker Deployment
+## 18. Docker Deployment
 
 Deploy the complete stack (PostgreSQL 16, FastAPI backend, React frontend) with a single command:
 
@@ -590,7 +590,7 @@ docker-compose down -v
 
 ---
 
-## 18. Verification & Quality Assurance
+## 19. Verification & Quality Assurance
 
 - **TypeScript Build & Lint Verification**:
   ```bash
@@ -611,14 +611,17 @@ docker-compose down -v
 
 ---
 
-## 20. Demonstration Videos & Walkthroughs
+## 20. Project & Company Walkthrough Videos
 
-The repository includes high-resolution demonstration screen recordings located in the `Videos/` directory:
+The repository includes two dedicated video recordings in the `Videos/` directory (tracked and uploaded via Git LFS), providing a complete visual demonstration of the implementation and company background:
 
-| Video File | Focus & Demonstrated Workflows |
-| :--- | :--- |
-| **`Videos/Loyalty Points Management System.mp4`** | Complete end-to-end walkthrough of the **Loyalty Points Management** web application: all 4 persona workflows (Operations Manager, Store Operator, Analyst, Customer), order returns with proportional points clawbacks, FIFO redemption execution, and mathematical validation telemetry. |
-| **`Videos/About YottaFlex.mp4`** | Architectural presentation and business problem overview covering ledger invariants, row-level locking concurrency protection, deterministic synthetic data generation, and bit-for-bit cryptographic reproducibility. |
+| Video Category | File Path | Detailed Description & Covered Workflows |
+| :--- | :--- | :--- |
+| 🎬 **Project Walkthrough** *(Full System Demo)* | **`Videos/Loyalty Points Management System.mp4`** | **Comprehensive End-to-End Application Walkthrough**: Demonstrates the live working solution for the **Loyalty Points Management** system across all 4 primary actor workflows (Operations Manager, Store/Warehouse Operator, Merchandising Analyst, Customer). Showcases order creation, eligible net spend calculation, itemized returns with automatic proportional points reversals, concurrency-safe redemptions with FIFO lot depletion, batch expiration execution, and live mathematical validation with anomaly detection telemetry. |
+| 🏢 **Company & Challenge Overview** *(YottaFlex.ai)* | **`Videos/About YottaFlex.mp4`** | **Company Background, Problem Context & Architecture Overview**: Details the **YottaFlex.ai Associate AI Forward Deployed Engineer** challenge requirements. Explains the business context behind auditable loyalty ledgers, the core architectural invariants (append-only ledger, double-spending prevention via pessimistic locking, deterministic FIFO lot tracking), the synthetic dataset pipeline (20,000 customers, 100,000 orders, 300,000 transactions), and cryptographic bit-for-bit reproducibility verification. |
+
+> [!TIP]
+> Both video files are tracked with **Git LFS** and can be viewed directly after cloning or by playing them locally using any standard media player (VLC, Windows Media Player, QuickTime).
 
 ---
 
