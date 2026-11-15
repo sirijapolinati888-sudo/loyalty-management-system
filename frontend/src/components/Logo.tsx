@@ -8,7 +8,7 @@ import React, { useId } from 'react';
 export const LogoMark: React.FC<{ size?: number; className?: string; title?: string }> = ({
   size = 36,
   className,
-  title = 'YottaFlex.ai',
+  title = 'Loyalty Points Management System',
 }) => {
   // Unique gradient ids so several marks can render on one page
   const id = useId().replace(/:/g, '');
@@ -41,7 +41,7 @@ export const LogoMark: React.FC<{ size?: number; className?: string; title?: str
   );
 };
 
-/** Mark plus "YottaFlex.ai / Loyalty Ledger" wordmark. */
+/** Mark plus "Loyalty Points Management / Auditable Ledger System" wordmark. */
 export const Logo: React.FC<{ size?: number; tone?: 'light' | 'dark'; className?: string }> = ({
   size = 36,
   tone = 'dark',
@@ -50,10 +50,10 @@ export const Logo: React.FC<{ size?: number; tone?: 'light' | 'dark'; className?
   <span className={`inline-flex items-center gap-3 ${className ?? ''}`}>
     <LogoMark size={size} />
     <span className="leading-tight">
-      <span className={`block text-[15px] font-semibold tracking-tight ${tone === 'dark' ? 'text-white' : 'text-[var(--text)]'}`}>
-        YottaFlex<span className={tone === 'dark' ? 'text-cyan-300' : 'text-brand-600'}>.ai</span>
+      <span className={`block text-[14px] font-bold tracking-tight ${tone === 'dark' ? 'text-white' : 'text-[var(--text)]'}`}>
+        Loyalty Points <span className={tone === 'dark' ? 'text-cyan-300' : 'text-brand-600'}>Management</span>
       </span>
-      <span className={`block text-[12px] ${tone === 'dark' ? 'text-slate-400' : 'text-[var(--text-3)]'}`}>Loyalty Ledger</span>
+      <span className={`block text-[11.5px] font-medium ${tone === 'dark' ? 'text-slate-400' : 'text-[var(--text-3)]'}`}>Auditable Ledger System</span>
     </span>
   </span>
 );

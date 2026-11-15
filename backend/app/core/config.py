@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="allow"
     )
 
-    APP_NAME: str = "YottaFlex.ai Loyalty Points Management System"
+    APP_NAME: str = "Loyalty Points Management System - Auditable Ledger System"
     API_V1_PREFIX: str = "/api/v1"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True

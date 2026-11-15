@@ -49,6 +49,6 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to YottaFlex.ai Loyalty Points Management & Auditable Ledger System API",
+        "message": "Welcome to Loyalty Points Management System - Auditable Ledger System API",
         "docs": f"{settings.API_V1_PREFIX}/docs"
     }

@@ -1,5 +1,5 @@
-# YottaFlex.ai – Loyalty Points Management & Auditable Ledger System
-### Problem Statement & Architecture
+# Loyalty Points Management
+### Auditable Ledger System
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
@@ -33,8 +33,9 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 - [17. REST API Reference](#17-rest-api-reference)
 - [18. Docker Deployment](#18-docker-deployment)
 - [19. Verification & Quality Assurance](#19-verification--quality-assurance)
-- [20. Technical Documentation References](#20-technical-documentation-references)
-- [21. Prompts Used for Building the Project](#21-prompts-used-for-building-the-project)
+- [20. Demonstration Videos & Walkthroughs](#20-demonstration-videos--walkthroughs)
+- [21. Technical Documentation References](#21-technical-documentation-references)
+- [22. Prompts Used for Building the Project](#22-prompts-used-for-building-the-project)
   - [Phase A: System Architecture & Feature Engineering Prompts](#phase-a-system-architecture--feature-engineering-prompts)
   - [Phase B: Real-World Debugging, Error Resolution & Edge-Case Prompts](#phase-b-real-world-debugging-error-resolution--edge-case-prompts)
 
@@ -440,7 +441,18 @@ docker-compose down -v
 
 ---
 
-## 19. Technical Documentation References
+## 20. Demonstration Videos & Walkthroughs
+
+The repository includes high-resolution demonstration screen recordings located in the `Videos/` directory:
+
+| Video File | Focus & Demonstrated Workflows |
+| :--- | :--- |
+| **`Videos/Loyalty Points Management System.mp4`** | Complete end-to-end walkthrough of the **Loyalty Points Management** web application: all 4 persona workflows (Operations Manager, Store Operator, Analyst, Customer), order returns with proportional points clawbacks, FIFO redemption execution, and mathematical validation telemetry. |
+| **`Videos/About YottaFlex.mp4`** | Architectural presentation and business problem overview covering ledger invariants, row-level locking concurrency protection, deterministic synthetic data generation, and bit-for-bit cryptographic reproducibility. |
+
+---
+
+## 21. Technical Documentation References
 
 Detailed technical guides and compliance evidence are maintained in the `docs/` folder:
 - [Requirement-Gap Analysis & Compliance Matrix](docs/requirement_gap_analysis.md)
@@ -454,7 +466,7 @@ Detailed technical guides and compliance evidence are maintained in the `docs/` 
 
 ---
 
-## 21. Prompts Used for Building the Project
+## 22. Prompts Used for Building the Project
 
 The entire solution was built and refined step-by-step using precise, role-focused engineering prompts. Below is a structured log that includes both **Architecture & Feature Prompts** (happy paths) and **Real-World Debugging Prompts** (handling runtime crashes, WatchFiles loops, CSS stacking issues, concurrency deadlocks, and multi-scrollbar conflicts).
 

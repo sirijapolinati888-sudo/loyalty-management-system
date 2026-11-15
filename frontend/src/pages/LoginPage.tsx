@@ -125,7 +125,7 @@ export const LoginPage: React.FC = () => {
           </ul>
         </div>
 
-        <p className="relative text-[12px] text-slate-500">© 2026 YottaFlex.ai · Seed 20261022</p>
+        <p className="relative text-[12px] text-slate-500">© 2026 Loyalty Points Management · Seed 20261022</p>
       </aside>
 
       {/* ================= Form panel ================= */}
