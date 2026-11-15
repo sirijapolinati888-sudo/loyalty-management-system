@@ -1,2 +1,2 @@
-total_points_expired,execution_date,cutoff_date,created_at,total_accounts_processed,id,status
-0,2026-01-02T05:30:00+05:30,2026-01-02T05:30:00+05:30,2026-01-02T05:30:00+05:30,0,EXP-2026-000001,COMPLETED
+id,execution_date,cutoff_date,total_accounts_processed,total_points_expired,status,created_at
+EXP-2026-000001,2026-01-02T00:00:00+00:00,2026-01-02T00:00:00+00:00,0,0,COMPLETED,2026-01-02T00:00:00+00:00

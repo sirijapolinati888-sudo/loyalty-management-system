@@ -3,9 +3,9 @@
     "anomaly_id": "ANOM-000001",
     "issue_type": "BALANCE_MISMATCH",
     "entity_name": "LoyaltyAccount",
-    "entity_id": "LOY-CUST-000031",
-    "expected_result": "Cached balance must match ledger sum (430)",
-    "actual_result": "Cached balance is 930",
+    "entity_id": "LOY-CUST-000008",
+    "expected_result": "Cached balance must match ledger sum (291)",
+    "actual_result": "Cached balance is 791",
     "severity": "CRITICAL",
     "explanation": "Stored loyalty account balance was corrupted by +500 points, causing mismatch with immutable ledger sum."
   },
@@ -15,9 +15,9 @@
     "entity_name": "PointsTransaction",
     "entity_id": "PTS-2026-99990001",
     "expected_result": "Redemption cannot exceed available points balance",
-    "actual_result": "Redeemed 525 exceeding available balance",
+    "actual_result": "Redeemed 1091 exceeding available balance",
     "severity": "CRITICAL",
-    "explanation": "PointsTransaction PTS-2026-99990001 spent 525 points, exceeding available balance."
+    "explanation": "PointsTransaction PTS-2026-99990001 spent 1091 points, exceeding available balance."
   },
   {
     "anomaly_id": "ANOM-000003",
@@ -33,11 +33,11 @@
     "anomaly_id": "ANOM-000004",
     "issue_type": "DOUBLE_EXPIRY",
     "entity_name": "PointsLot",
-    "entity_id": "LOT-2026-000003",
+    "entity_id": "LOT-2026-000467",
     "expected_result": "Points lot must only expire once",
-    "actual_result": "Multiple expiration transactions reference lot LOT-2026-000003",
+    "actual_result": "Multiple expiration transactions reference lot LOT-2026-000467",
     "severity": "CRITICAL",
-    "explanation": "Points lot LOT-2026-000003 was expired multiple times, deducting points repeatedly."
+    "explanation": "Points lot LOT-2026-000467 was expired multiple times, deducting points repeatedly."
   },
   {
     "anomaly_id": "ANOM-000005",

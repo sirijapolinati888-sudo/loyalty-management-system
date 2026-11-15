@@ -196,7 +196,7 @@ class RedemptionService:
             PointsLot.loyalty_account_id == account.id,
             PointsLot.remaining_points > 0,
             PointsLot.is_expired == False
-        ).order_by(PointsLot.expires_at.asc()).all()
+        ).order_by(PointsLot.expires_at.asc(), PointsLot.id.asc()).all()
 
         points_to_consume = points_needed
         for lot in active_lots:
@@ -284,7 +284,7 @@ class ExpirationService:
             PointsLot.expires_at <= cutoff,
             PointsLot.remaining_points > 0,
             PointsLot.is_expired == False
-        ).all()
+        ).order_by(PointsLot.expires_at.asc(), PointsLot.id.asc()).all()
 
         total_points_expired = 0
         accounts_affected = set()

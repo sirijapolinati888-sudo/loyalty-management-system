@@ -13,10 +13,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm font-medium text-slate-600">Verifying session...</span>
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+          <span className="text-sm text-[var(--text-3)]">Verifying session…</span>
         </div>
       </div>
     );

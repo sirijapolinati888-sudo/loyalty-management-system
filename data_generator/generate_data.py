@@ -87,16 +87,21 @@ class SyntheticDataGenerator:
 
         db.commit()
 
-    def generate(self, mode: str = "starter", target_dir: str = "data"):
+    def generate(self, mode: str = "starter", target_dir: str = "data", progress=None):
         """
         Generates full synthetic datasets following the 12-step generation order.
         Starter mode: 100 customers, 500 orders, ~1500 points txns
         Full mode: 20000 customers, 100000 orders, 300000 points txns
         """
+        def step(msg: str):
+            print(msg)
+            if progress:
+                progress(msg)
+
         num_customers = 100 if mode == "starter" else 20000
         num_orders = 500 if mode == "starter" else 100000
 
-        print(f"=== Starting Synthetic Data Generation (Mode: {mode}, Seed: {self.seed}) ===")
+        step(f"=== Starting Synthetic Data Generation (Mode: {mode}, Seed: {self.seed}) ===")
         db = SessionLocal()
         try:
             # 1. Base Tiers, Rules, Rewards
@@ -104,7 +109,7 @@ class SyntheticDataGenerator:
             rule = db.query(Rule).filter(Rule.id == "RULE-ACCRUAL-01").first()
 
             # 2. Customers & Loyalty Accounts
-            print(f"1. Generating {num_customers} Customers and Loyalty Accounts...")
+            step(f"1. Generating {num_customers} Customers and Loyalty Accounts...")
             customers = []
             accounts = []
             for i in range(1, num_customers + 1):
@@ -156,9 +161,9 @@ class SyntheticDataGenerator:
             db.commit()
 
             # 3. Orders & Order Lines & Accruals
-            print(f"2. Generating {num_orders} Orders, Lines and Accrual Transactions...")
+            step(f"2. Generating {num_orders} Orders, Lines and Accrual Transactions...")
             categories = ["Electronics", "Fashion", "Groceries", "Books", "Home & Kitchen", "Fitness"]
-            all_rewards = db.query(Reward).all()
+            all_rewards = db.query(Reward).order_by(Reward.id).all()
 
             for i in range(1, num_orders + 1):
                 ord_id = f"ORD-2026-{i:06d}"
@@ -219,12 +224,14 @@ class SyntheticDataGenerator:
 
                 if i % 100 == 0:
                     db.commit()
+                if progress and i % 1000 == 0:
+                    progress(f"2. Generated {i:,} of {num_orders:,} orders...")
 
             db.commit()
 
             # 4. Order Returns (5% return rate)
-            print("3. Generating Order Returns and Reversals...")
-            completed_orders = db.query(Order).all()
+            step("3. Generating Order Returns and Reversals...")
+            completed_orders = db.query(Order).order_by(Order.id).all()
             num_returns = max(10, int(len(completed_orders) * 0.05))
             return_orders = random.sample(completed_orders, num_returns)
 
@@ -258,8 +265,8 @@ class SyntheticDataGenerator:
             db.commit()
 
             # 5. Redemptions
-            print("4. Generating Point Redemptions...")
-            eligible_accounts = db.query(LoyaltyAccount).filter(LoyaltyAccount.cached_balance >= 100).all()
+            step("4. Generating Point Redemptions...")
+            eligible_accounts = db.query(LoyaltyAccount).filter(LoyaltyAccount.cached_balance >= 100).order_by(LoyaltyAccount.id).all()
             for acc in eligible_accounts:
                 if random.random() < 0.4:  # 40% chance of redeeming
                     # Pick an affordable reward
@@ -280,12 +287,12 @@ class SyntheticDataGenerator:
             db.commit()
 
             # 6. Expiration Batches
-            print("5. Processing Point Expiry Batches...")
+            step("5. Processing Point Expiry Batches...")
             cutoff_date = self.base_date + timedelta(days=366)
             ExpirationService.process_expired_points(db, cutoff_date=cutoff_date)
             db.commit()
 
-            print("=== Baseline Data Generation Completed Successfully! ===")
+            step("=== Baseline Data Generation Completed Successfully! ===")
             self.export_baseline_data(db, target_dir)
 
         finally:
@@ -314,7 +321,8 @@ class SyntheticDataGenerator:
             records = db.query(model).order_by(getattr(model, sort_col)).all()
             data = []
             for r in records:
-                d = {k: v for k, v in r.__dict__.items() if not k.startswith("_")}
+                # Use table column order so exports are byte-for-byte reproducible
+                d = {c.key: getattr(r, c.key) for c in model.__table__.columns}
                 # Drop updated_at from strict reproducibility comparison to protect against timestamp drift
                 d.pop("updated_at", None)
                 for k, v in d.items():

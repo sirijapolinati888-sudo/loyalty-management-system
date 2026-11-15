@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, type UserRole } from '../context/AuthContext';
-import logoImg from '../assets/Logo.png';
+import { Logo } from '../components/Logo';
 import {
-  ShieldCheck,
-  Lock,
-  Mail,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  UserCheck,
-  Store,
-  BarChart3,
-  Settings2,
-  LogIn,
-  Layers,
-  Database
+  ShieldCheck, Lock, Mail, AlertCircle, Eye, EyeOff, UserCheck,
+  Store, BarChart3, Settings2, ArrowRight, Layers, Database, Check
 } from 'lucide-react';
+import { cx, toneStyles, type Tone } from '../components/ui';
+
+const features = [
+  { icon: ShieldCheck, title: 'Auditable & accurate', text: 'Immutable ledger with full reconciliation' },
+  { icon: Layers, title: 'Scalable & reliable', text: 'Built for millions of members and transactions' },
+  { icon: BarChart3, title: 'Anomaly monitoring', text: 'Detect and explain loyalty data issues' },
+  { icon: Database, title: 'Synthetic data ready', text: 'Reproducible, seeded datasets on demand' },
+];
+
+const demoAccounts: { email: string; label: string; hint: string; icon: React.ComponentType<{ className?: string }>; tone: Tone }[] = [
+  { email: 'ops@yottaflex.ai', label: 'Ops Manager', hint: 'Full audit access', icon: Settings2, tone: 'brand' },
+  { email: 'operator@yottaflex.ai', label: 'Store Operator', hint: 'Returns & refunds', icon: Store, tone: 'emerald' },
+  { email: 'analyst@yottaflex.ai', label: 'Analyst', hint: 'Analytics & rules', icon: BarChart3, tone: 'amber' },
+  { email: 'customer@yottaflex.ai', label: 'Customer', hint: 'Points & rewards', icon: UserCheck, tone: 'pink' },
+];
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -60,375 +64,186 @@ export const LoginPage: React.FC = () => {
   const handleQuickLogin = (quickEmail: string) => {
     setEmail(quickEmail);
     setPassword('Password123!');
+    setError(null);
   };
 
   return (
-    <div className="min-h-screen lg:h-screen w-full relative flex flex-col lg:flex-row bg-[#ece8f9] text-slate-900 font-sans antialiased overflow-y-auto lg:overflow-hidden">
-      {/* =========================================================================
-          BACKGROUND AMBIENT CANVAS & CURVED WAVE SHAPE
-          ========================================================================= */}
-      {/* Base Dark Deep Indigo/Navy to Purple Gradient on Left */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0c0d28] via-[#1b1046] to-[#4c168f] pointer-events-none" />
-
-      {/* SVG Wave Shape dividing the Left Dark Brand Area and Right Lavender Canvas */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden hidden lg:block">
-        <svg
-          className="absolute top-0 right-0 h-full w-[60%] xl:w-[58%] text-[#ece8f9]"
-          viewBox="0 0 600 800"
-          preserveAspectRatio="none"
-          fill="currentColor"
-        >
-          <path d="M 120 0 C 40 120, 20 220, 70 360 C 130 520, 80 680, 0 800 L 600 800 L 600 0 Z" />
-        </svg>
-
-        {/* Ambient decorative subtle wave glow along curve */}
-        <div className="absolute top-[35%] left-[34%] w-64 h-64 bg-[#7c3aed]/20 rounded-full blur-3xl pointer-events-none" />
-      </div>
-
-      {/* =========================================================================
-          LEFT BRANDING PANEL (Hidden or compact on mobile, prominent on desktop)
-          ========================================================================= */}
-      <div className="hidden lg:flex w-full lg:w-[46%] xl:w-[44%] p-6 lg:p-10 xl:p-12 flex-col justify-between text-white relative z-10 shrink-0 h-full overflow-hidden">
-        {/* Top: Y Logo Image & Brand text */}
-        <div className="flex items-center gap-3">
-          <img
-            src={logoImg}
-            alt="YottaFlex.ai Logo"
-            className="w-9 h-9 object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(124,58,237,0.5)]"
+    <div className="h-screen w-full flex bg-[var(--bg)] overflow-hidden">
+      {/* ================= Brand panel ================= */}
+      <aside className="hidden lg:flex relative w-[46%] xl:w-[44%] flex-col justify-between overflow-hidden bg-[#0b0a1f] p-8 xl:p-10 text-white">
+        {/* Animated mesh */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-brand-600/40 blur-[110px] animate-drift" />
+          <div className="absolute top-1/3 -right-40 w-[460px] h-[460px] rounded-full bg-cyan-500/20 blur-[110px] animate-drift" style={{ animationDelay: '-6s' }} />
+          <div className="absolute -bottom-40 left-1/4 w-[420px] h-[420px] rounded-full bg-fuchsia-500/20 blur-[110px] animate-drift" style={{ animationDelay: '-12s' }} />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)',
+              backgroundSize: '44px 44px',
+              maskImage: 'radial-gradient(ellipse at 30% 40%, black 20%, transparent 70%)',
+              WebkitMaskImage: 'radial-gradient(ellipse at 30% 40%, black 20%, transparent 70%)',
+            }}
           />
-          <div>
-            <div className="font-extrabold text-white text-base tracking-tight leading-none">
-              YottaFlex.ai
-            </div>
-            <div className="text-[11px] text-indigo-200/80 font-medium mt-1 leading-none">
-              Loyalty Ledger
-            </div>
-          </div>
         </div>
 
-        {/* Middle: Headline, Description & 4 Pillars */}
-        <div className="my-auto py-2 space-y-5 xl:space-y-6">
-          <div>
-            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-white leading-tight">
-              Enterprise <br />
-              <span className="text-white">
-                Loyalty Ledger
-              </span>
-            </h1>
-            <p className="text-xs sm:text-sm text-indigo-200/75 font-medium mt-2 max-w-sm leading-relaxed">
-              Enterprise Loyalty Ledger &amp; Auditable Rules Engine
-            </p>
-          </div>
-
-          {/* 4 Feature Highlights */}
-          <div className="space-y-3 pt-1">
-            {/* Feature 1 */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2a1d52] border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-indigo-200">
-                <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="font-extrabold text-xs sm:text-sm text-white">
-                  Auditable &amp; Accurate
-                </div>
-                <div className="text-[11px] text-indigo-200/65 font-medium mt-0.5">
-                  Full ledger audit and reconciliation
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2a1d52] border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-indigo-200">
-                <Layers className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="font-extrabold text-xs sm:text-sm text-white">
-                  Scalable &bull; Reliable
-                </div>
-                <div className="text-[11px] text-indigo-200/65 font-medium mt-0.5">
-                  Handle millions of customers and transactions
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2a1d52] border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-indigo-200">
-                <BarChart3 className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="font-extrabold text-xs sm:text-sm text-white">
-                  Anomaly Monitoring
-                </div>
-                <div className="text-[11px] text-indigo-200/65 font-medium mt-0.5">
-                  Detect and explain loyalty data issues
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="flex items-start gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-[#2a1d52] border border-white/10 flex items-center justify-center shrink-0 shadow-sm text-indigo-200">
-                <Database className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="font-extrabold text-xs sm:text-sm text-white">
-                  Synthetic Data Ready
-                </div>
-                <div className="text-[11px] text-indigo-200/65 font-medium mt-0.5">
-                  Generate realistic, reproducible datasets
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="relative animate-fade-up group logo-hover w-fit">
+          <Logo size={38} tone="dark" />
         </div>
 
-        {/* Bottom subtle copyright / seed */}
-        <div className="text-[11px] text-indigo-300/50 font-medium">
-          Seed: 20261022 &bull; YottaFlex 2.0
-        </div>
-      </div>
+        <div className="relative max-w-md my-auto py-4">
+          <span className="inline-flex items-center gap-2 h-6 px-2.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 text-[12px] text-slate-300 animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <span className="live-dot text-emerald-400" /> Ledger online · v2.0
+          </span>
+          <h1 className="mt-4 text-[36px] xl:text-[42px] font-bold leading-[1.08] tracking-[-0.03em] animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            Every point,
+            <br />
+            <span className="bg-gradient-to-r from-brand-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent animate-gradient">
+              accounted for.
+            </span>
+          </h1>
+          <p className="mt-3 text-[14px] leading-relaxed text-slate-400 animate-fade-up" style={{ animationDelay: '0.15s' }}>
+            The enterprise loyalty ledger with an auditable rules engine, FIFO expiry and independent reconciliation.
+          </p>
 
-      {/* =========================================================================
-          RIGHT AUTHENTICATION PANEL (Clean Floating Login Card - Non-scrolling Fit)
-          ========================================================================= */}
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 xl:p-8 relative z-10 w-full min-h-screen lg:min-h-0 lg:h-full py-8 lg:py-6 overflow-y-auto lg:overflow-hidden">
-        <div className="w-full max-w-[430px] bg-white rounded-3xl p-5 sm:p-6 xl:p-7 shadow-[0_12px_40px_rgba(99,85,246,0.07)] border border-slate-200/60 my-auto">
-          {/* Header with Centered Logo.png & Title */}
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center gap-2 mb-1">
-              <img
-                src={logoImg}
-                alt="YottaFlex.ai Logo"
-                className="w-7 h-7 object-contain drop-shadow-[0_2px_6px_rgba(110,47,239,0.4)]"
-              />
-              <span className="text-xl font-black text-slate-900 tracking-tight">
-                YottaFlex.ai
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium">
-              Sign in to your account
-            </p>
+          <ul className="mt-6 space-y-2">
+            {features.map((f, i) => (
+              <li
+                key={f.title}
+                style={{ animationDelay: `${0.22 + i * 0.07}s` }}
+                className="group flex items-center gap-3 p-2 -mx-2 rounded-xl transition-colors duration-300 hover:bg-white/[0.04] animate-fade-up"
+              >
+                <span className="w-8 h-8 rounded-lg bg-white/[0.06] ring-1 ring-white/10 flex items-center justify-center text-brand-200 transition-all duration-500 group-hover:bg-brand-500/30 group-hover:text-white group-hover:scale-105 shrink-0">
+                  <f.icon className="w-4 h-4" />
+                </span>
+                <div>
+                  <p className="text-[13.5px] font-medium text-white">{f.title}</p>
+                  <p className="text-[12px] text-slate-400">{f.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative text-[12px] text-slate-500">© 2026 YottaFlex.ai · Seed 20261022</p>
+      </aside>
+
+      {/* ================= Form panel ================= */}
+      <main className="flex-1 flex items-center justify-center px-5 py-4 sm:px-8 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-40 right-0 w-[480px] h-[480px] rounded-full bg-brand-200/40 blur-[120px]" />
+
+        <div className="relative w-full max-w-[420px]">
+          <div className="lg:hidden mb-4 animate-fade-up group logo-hover w-fit">
+            <Logo size={36} tone="light" />
           </div>
 
-          {/* Form */}
-          <form className="space-y-3" onSubmit={handleSubmit}>
+          <div className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <h2 className="text-[26px] font-bold tracking-tight text-[var(--text)]">Welcome back</h2>
+            <p className="mt-1 text-[14px] text-[var(--text-3)]">Sign in to your loyalty console.</p>
+          </div>
+
+          <form className="mt-5 space-y-3.5 animate-fade-up" style={{ animationDelay: '0.1s' }} onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 p-2 flex items-start gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <div className="text-[11px] font-semibold text-rose-700">{error}</div>
+              <div className="callout bg-rose-50 border-rose-200 text-rose-700 animate-scale-in py-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
+                <span className="text-[13px]">{error}</span>
               </div>
             )}
 
-            {/* Work Email */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Work Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <label className="label text-[13px]" htmlFor="email">Work email</label>
+              <div className="relative group">
+                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none transition-colors group-focus-within:text-brand-600" />
                 <input
+                  id="email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@yottaflex.ai"
-                  style={{
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 1px 1px rgba(255,255,255,0.9)'
-                  }}
-                  className="w-full pl-10 pr-3.5 py-2 bg-[#f4f6fc] border-t border-t-slate-300/80 border-l border-l-slate-300/70 border-b border-b-white border-r border-r-white rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6355f6]/30 focus:bg-white transition-all"
+                  className="input input-with-icon h-10 text-[13.5px]"
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700">
-                  Password
-                </label>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <label className="label text-[13px]" htmlFor="password">Password</label>
+              <div className="relative group">
+                <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none transition-colors group-focus-within:text-brand-600" />
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  style={{
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06), 0 1px 1px rgba(255,255,255,0.9)'
-                  }}
-                  className="w-full pl-10 pr-10 py-2 bg-[#f4f6fc] border-t border-t-slate-300/80 border-l border-l-slate-300/70 border-b border-b-white border-r border-r-white rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6355f6]/30 focus:bg-white transition-all"
+                  placeholder="Enter your password"
+                  className="input input-with-icon h-10 pr-10 text-[13.5px]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text)] hover:bg-slate-100 transition-colors cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
 
-            {/* Sign In to Console Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full mt-1.5 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-black text-xs text-white bg-gradient-to-r from-[#6e2fef] via-[#5b1edb] to-[#45108a] hover:opacity-95 shadow-[0_4px_14px_rgba(110,47,239,0.35)] active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
-            >
-              <LogIn className="w-4 h-4 stroke-[2.2]" />
-              <span>{isSubmitting ? 'Signing In...' : 'Sign In'}</span>
+            <button type="submit" disabled={isSubmitting} className="btn btn-primary w-full group py-2.5">
+              {isSubmitting ? (
+                <><span className="spinner !border-white/30 !border-t-white" /> Signing in…</>
+              ) : (
+                <>Sign in <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></>
+              )}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-3.5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200/70" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase">
-              <span className="bg-white px-2.5 font-bold text-slate-400 tracking-wider">
-                OR
-              </span>
-            </div>
+          <div className="relative my-5 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="divider" />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 bg-[var(--bg)] text-[12px] text-[var(--text-3)]">
+              or use a demo account
+            </span>
           </div>
 
-          {/* Quick Demo Switcher (2x2 Grid) */}
-          <div>
-            <p className="text-[11px] font-bold text-slate-600 text-center mb-2.5">
-              One-Click Role Demonstration Accounts
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              {/* Ops Manager */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('ops@yottaflex.ai')}
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f4f7ff 100%)',
-                  boxShadow: '0 3px 6px -1px rgba(59, 130, 246, 0.16), 0 1px 2px 0 rgba(0, 0, 0, 0.05), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(59, 130, 246, 0.12)'
-                }}
-                className="p-2.5 rounded-xl border border-blue-200/80 hover:border-blue-400 text-left transition-all flex items-center gap-2.5 group cursor-pointer active:translate-y-0.5 active:shadow-inner"
-              >
-                <div
-                  style={{
-                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8)'
-                  }}
-                  className="w-8 h-8 rounded-lg bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200/80 group-hover:scale-105 transition-transform"
+          <div className="grid grid-cols-2 gap-2.5 stagger">
+            {demoAccounts.map((acc) => {
+              const selected = email === acc.email;
+              return (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => handleQuickLogin(acc.email)}
+                  className={cx(
+                    'card card-hover group relative p-2.5 text-left cursor-pointer flex items-center gap-2.5',
+                    selected && '!border-brand-400 ring-4 ring-brand-500/10',
+                  )}
                 >
-                  <Settings2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-[11px] text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Ops Manager
-                  </div>
-                  <div className="text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">
-                    Full Audit Access
-                  </div>
-                </div>
-              </button>
-
-              {/* Store Operator */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('operator@yottaflex.ai')}
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)',
-                  boxShadow: '0 3px 6px -1px rgba(16, 185, 129, 0.16), 0 1px 2px 0 rgba(0, 0, 0, 0.05), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(16, 185, 129, 0.12)'
-                }}
-                className="p-2.5 rounded-xl border border-emerald-200/80 hover:border-emerald-400 text-left transition-all flex items-center gap-2.5 group cursor-pointer active:translate-y-0.5 active:shadow-inner"
-              >
-                <div
-                  style={{
-                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8)'
-                  }}
-                  className="w-8 h-8 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/80 group-hover:scale-105 transition-transform"
-                >
-                  <Store className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-[11px] text-slate-900 group-hover:text-emerald-600 transition-colors">
-                    Store Operator
-                  </div>
-                  <div className="text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">
-                    Returns &amp; Refunds
-                  </div>
-                </div>
-              </button>
-
-              {/* Analyst */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('analyst@yottaflex.ai')}
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #fffbeb 100%)',
-                  boxShadow: '0 3px 6px -1px rgba(245, 158, 11, 0.16), 0 1px 2px 0 rgba(0, 0, 0, 0.05), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(245, 158, 11, 0.12)'
-                }}
-                className="p-2.5 rounded-xl border border-amber-200/80 hover:border-amber-400 text-left transition-all flex items-center gap-2.5 group cursor-pointer active:translate-y-0.5 active:shadow-inner"
-              >
-                <div
-                  style={{
-                    boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8)'
-                  }}
-                  className="w-8 h-8 rounded-lg bg-gradient-to-b from-amber-50 to-amber-100 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/80 group-hover:scale-105 transition-transform"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-[11px] text-slate-900 group-hover:text-amber-600 transition-colors">
-                    Analyst
-                  </div>
-                  <div className="text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">
-                    Analytics &amp; Rules
-                  </div>
-                </div>
-              </button>
-
-              {/* Customer */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('customer@yottaflex.ai')}
-                style={{
-                  background: 'linear-gradient(180deg, #ffffff 0%, #faf5ff 100%)',
-                  boxShadow: '0 3px 6px -1px rgba(168, 85, 247, 0.16), 0 1px 2px 0 rgba(0, 0, 0, 0.05), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(168, 85, 247, 0.12)'
-                }}
-                className="p-2.5 rounded-xl border border-purple-200/80 hover:border-purple-400 text-left transition-all flex items-center gap-2.5 group cursor-pointer active:translate-y-0.5 active:shadow-inner"
-              >
-                <div
-                  style={{
-                    boxShadow: '0 2px 4px rgba(168, 85, 247, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.8)'
-                  }}
-                  className="w-8 h-8 rounded-lg bg-gradient-to-b from-purple-50 to-purple-100 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200/80 group-hover:scale-105 transition-transform"
-                >
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-[11px] text-slate-900 group-hover:text-purple-600 transition-colors">
-                    Customer
-                  </div>
-                  <div className="text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">
-                    Points &amp; Rewards
-                  </div>
-                </div>
-              </button>
-            </div>
+                  <span className={cx('icon-tile icon-tile-sm !w-8 !h-8', toneStyles[acc.tone].tile)}>
+                    <acc.icon className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-semibold text-[var(--text)] truncate">{acc.label}</span>
+                    <span className="block text-[11px] text-[var(--text-3)] truncate">{acc.hint}</span>
+                  </span>
+                  {selected && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-brand-600 text-white flex items-center justify-center animate-scale-in">
+                      <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Security Information Footer */}
-          <div className="mt-4 pt-3 border-t border-slate-100 text-center">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#6355f6]" />
-              <span>Cryptographic Session Tokens &bull; Role-Based Boundary Enforcement</span>
-            </div>
-          </div>
+          <p className="mt-5 flex items-center justify-center gap-2 text-[12px] text-[var(--text-3)] animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+            Signed session tokens · Role-based access control
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

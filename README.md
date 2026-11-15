@@ -1,5 +1,5 @@
 # YottaFlex.ai – Loyalty Points Management & Auditable Ledger System
-### Enterprise Implementation for Associate AI Forward Deployed Engineer Round 2 – 72 Hours Code Challenge
+### Problem Statement & Architecture
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org)
@@ -34,6 +34,7 @@ A complete, production-grade **Enterprise Loyalty Points Management System & Aud
 - [18. Docker Deployment](#18-docker-deployment)
 - [19. Verification & Quality Assurance](#19-verification--quality-assurance)
 - [20. Technical Documentation References](#20-technical-documentation-references)
+- [21. Prompts Used for Building the Project](#21-prompts-used-for-building-the-project)
 
 ---
 
@@ -448,3 +449,91 @@ Detailed technical guides and compliance evidence are maintained in the `docs/` 
 - [Anomaly Detection Benchmark & Ground Truth Evaluation](docs/anomaly_detection.md)
 - [Validation Engine & Financial Reconciliation Summary](docs/validation_summary.md)
 - [Cryptographic Reproducibility Evidence Report](docs/reproducibility.md)
+
+---
+
+## 21. Prompts Used for Building the Project
+
+Below is a structured log of the engineering, architectural, backend, data generation, and frontend prompts used throughout the iterative design, implementation, and refinement of the Loyalty Management System:
+
+### Phase 1: Architecture, Data Modeling & Database Design
+```text
+Prompt 1.1: Database Schema & Entity Design
+"Design an enterprise-grade PostgreSQL relational schema for an auditable Loyalty Points Management & Transaction Ledger System. Model all 10 core entities: Customer, LoyaltyAccount, Tier, Rule, Order, OrderLine, PointsTransaction, Reward, Redemption, and ExpiryBatch, along with supporting audit tables (PointsLot, OrderReturn, OrderReturnLine, TierHistory, RuleHistory, RedemptionAttempt, AuditLog, and IdempotencyRecord). Enforce deterministic ID formatting (CUST-000001, LOY-CUST-000001, ORD-2026-000001, PTS-2026-00000001, RDM-2026-000001, EXP-2026-000001), exact decimal precision, foreign key relationships, check constraints, and compound indexes."
+```
+
+```text
+Prompt 1.2: Immutable Double-Entry Ledger & FIFO Points Lots
+"Implement an append-only immutable double-entry points ledger with FIFO point lot consumption. Ensure points accruals generate positive ledger transactions and corresponding points lots with 365-day expiration dates. Redemptions and expirations must consume lots in deterministic FIFO order (earliest expiring first) using pessimistic row-level locking (SELECT ... FOR UPDATE) to prevent concurrency anomalies and double-spending."
+```
+
+---
+
+### Phase 2: Core Business Logic & Rule Engine
+```text
+Prompt 2.1: Accrual & Return Reversals
+"Develop the business logic engine in FastAPI/SQLAlchemy for:
+1. Points Accrual: Calculate points earned using floor rounding (floor(eligible_net_spend / threshold) * points_awarded) based on active rules. Excluded items (gift cards, warranties) and cancelled orders earn zero.
+2. Proportional Returns: When an order is fully or partially returned, claw back points proportionally based on the returned eligible spend relative to original spend. Create signed negative REVERSAL transactions referencing the original transaction, decrement lot balances, and allow negative customer balances when required by policy."
+```
+
+```text
+Prompt 2.2: Tier Progression & Expiration Batches
+"Implement tier progression evaluation where membership tiers (Bronze, Silver, Gold, Platinum) are evaluated strictly against qualifying net spend (excluding returns, taxes, gift cards) rather than gross spend. Write an automated batch expiration engine that finds all points lots with remaining balance past their expiration date, marks them expired, and generates auditable negative EXPIRATION ledger records idempotently."
+```
+
+---
+
+### Phase 3: Synthetic Data Generation & Reproducibility
+```text
+Prompt 3.1: Deterministic Synthetic Data Generator
+"Create a standalone synthetic data generation engine with cryptographic bit-for-bit reproducibility using a fixed random seed (20261022). Generate realistic customers, order lines with mixed eligible/excluded items, transactions, FIFO redemptions, returns, and tier progressions. Export the dataset to both normalized relational CSV and JSON formats, and compute SHA-256 checksums to verify identical output across multiple runs."
+```
+
+```text
+Prompt 3.2: Edge Cases & Anomaly Injection
+"Inject 5 realistic edge cases and negative scenarios into the generated loyalty dataset with ground-truth labels for auditing:
+1. Balance Mismatch: A drift between cached loyalty balance and ledger transaction sum.
+2. Unreversed Liability: An order return that failed to claw back points.
+3. Expiration Anomaly: Points remaining active past their expiration cutoff date.
+4. Duplicate Expiration: Points deducted more than once for the same expiration batch.
+5. Tier Miscalculation: A customer tier assigned based on gross spend rather than qualifying net spend."
+```
+
+---
+
+### Phase 4: Independent Validation Engine & Anomaly Detection
+```text
+Prompt 4.1: Independent Mathematical Validation & Reconciliation
+"Build an independent validation engine that audits raw database records against mathematical invariants:
+1. Reconcile account cached balances against the sum of all signed ledger events (SUM(points_amount)).
+2. Validate active lot balances against remaining account points.
+3. Verify qualifying net spend calculations across all order lines and returns.
+4. Compute benchmark precision, recall, and F1 scores against the isolated ground-truth anomaly dataset."
+```
+
+---
+
+### Phase 5: REST API & Role-Based Security
+```text
+Prompt 5.1: FastAPI Backend & JWT RBAC
+"Develop production REST API endpoints in FastAPI with JWT bearer authentication and role-based access control (RBAC) across 4 personas:
+- Operations Manager (ops@yottaflex.ai): Full audit, batch controls, anomaly inspection, and data generation.
+- Store Operator (operator@yottaflex.ai): Order viewing and proportional return processing.
+- Merchandising Analyst (analyst@yottaflex.ai): Tier thresholds, rules, analytics, and validation reports.
+- Customer (customer@yottaflex.ai): Scoped view of own profile, points ledger, and catalog redemptions.
+Add automatic OpenAPI/Swagger documentation, error handling, CORS, and database session dependency injection."
+```
+
+---
+
+### Phase 6: Modern React UI & Interactive Experience
+```text
+Prompt 6.1: Enterprise Glassmorphism & Responsive Dashboard
+"Build an enterprise React 19 + TypeScript frontend with Tailwind CSS 4. Implement a dark sidebar layout with illuminated ambient gradients, custom metric stat cards, tabular ledger inspection, order detail slide-outs, and quick-login demo accounts for all 4 roles."
+```
+
+```text
+Prompt 6.2: Modal Centering, Scroll Lock & Polish
+"Refactor the inspection modal component into a React Portal (createPortal) mounted to document.body so it centers cleanly in the content viewport to the right of the persistent sidebar without overflowing onto navigation. Lock background scroll while modals are open, eliminate nested table scrollbars, and display full entity IDs without truncation."
+```

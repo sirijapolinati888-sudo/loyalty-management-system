@@ -1,25 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { LoyaltyAPI } from '../services/api';
+import { Eye, Users, ShoppingCart, Receipt, Coins, Award, Wallet, IdCard, ArrowUpRight } from 'lucide-react';
 import {
-  Search, Eye, X, Users, Mail, User, Activity, Settings2,
-  ChevronLeft, ChevronRight, IdCard
-} from 'lucide-react';
+  PageHeader, Badge, StatusBadge, Pagination, Modal, SearchInput, EmptyState, InlineLoader,
+  IconTile, humanize, cx, type Tone
+} from '../components/ui';
+
+const avatarTones = ['from-brand-400 to-brand-600', 'from-cyan-400 to-blue-500', 'from-pink-400 to-rose-500', 'from-amber-400 to-orange-500', 'from-emerald-400 to-teal-500'];
+
+const Avatar: React.FC<{ first?: string; last?: string; id?: string; size?: number }> = ({ first = '', last = '', id = '', size = 34 }) => {
+  const idx = (id.charCodeAt(id.length - 1) || 0) % avatarTones.length;
+  return (
+    <span
+      className={cx('inline-flex items-center justify-center rounded-full bg-gradient-to-br text-white font-semibold shrink-0', avatarTones[idx])}
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
+    >
+      {(first[0] || '') + (last[0] || '')}
+    </span>
+  );
+};
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15; // More compact rows per page
+  const [loading, setLoading] = useState(true);
+  const pageSize = 15;
 
   // Selected customer inspection modal
   const [selectedCust, setSelectedCust] = useState<any>(null);
   const [account, setAccount] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
+  const [detailTab, setDetailTab] = useState<'orders' | 'ledger'>('orders');
 
   useEffect(() => {
     const skip = (currentPage - 1) * pageSize;
+    setLoading(true);
     LoyaltyAPI.getCustomers({ skip, limit: pageSize, search }).then((data) => {
       if (data && typeof data === 'object' && 'items' in data) {
         setCustomers(data.items || []);
@@ -31,363 +49,185 @@ export const CustomersPage: React.FC = () => {
         setCustomers([]);
         setTotalCount(0);
       }
-    });
+    }).finally(() => setLoading(false));
   }, [search, currentPage]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setCurrentPage(1);
   };
 
   const viewDetails = (c: any) => {
     setSelectedCust(c);
+    setAccount(null);
+    setOrders([]);
+    setTxns([]);
+    setDetailTab('orders');
     LoyaltyAPI.getCustomerAccount(c.id).then(setAccount);
     LoyaltyAPI.getCustomerOrders(c.id).then(setOrders);
     LoyaltyAPI.getCustomerTransactions(c.id).then(setTxns);
   };
 
-  // Pagination calculation
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalCount);
-  const currentCustomers = customers;
+  const accountStats: { label: string; value: React.ReactNode; icon: any; tone: Tone }[] = account ? [
+    { label: 'Loyalty ID', value: <span className="font-mono text-[13px]">{account.id}</span>, icon: IdCard, tone: 'slate' },
+    { label: 'Current tier', value: humanize(account.current_tier_id), icon: Award, tone: 'amber' },
+    { label: 'Points balance', value: `${Number(account.cached_balance).toLocaleString()} pts`, icon: Coins, tone: 'emerald' },
+    { label: 'Qualifying spend', value: `₹${account.qualifying_net_spend?.toLocaleString()}`, icon: Wallet, tone: 'violet' },
+  ] : [];
 
   return (
-    <div className="space-y-3.5">
-      {/* Top Header: Title & Subtitle */}
-      <div className="flex items-center justify-between px-1 py-1">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#6355f6] to-[#8d7dfb] text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">Customers Registry</h1>
-            <p className="text-[11px] text-slate-400 font-medium mt-1 leading-none">
-              Search customer profiles, view balances, tier status and order history
-            </p>
-          </div>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        icon={Users}
+        title="Customers"
+        description="Search member profiles and inspect balances, tier status and order history."
+      />
 
-      {/* Main Customers Table Card with Inset 3D Search Bar and Compact Rows */}
-      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-2xs overflow-hidden">
-        {/* Search Bar Inserted Directly Inside Table Container Header with Inset 3D Styling */}
-        <div className="py-2.5 px-5 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xs text-slate-800">All Customers</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#edeafc] text-[#6355f6] border border-indigo-100 shadow-2xs">
-              {totalCount} Total
-            </span>
+      <div className="card overflow-hidden animate-fade-up" style={{ animationDelay: '0.05s' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2.5">
+            <h3 className="card-title">All customers</h3>
+            <Badge tone="brand">{totalCount.toLocaleString()}</Badge>
           </div>
-
-          {/* 3D Inset Beveled Search Bar */}
-          <div className="relative w-full sm:w-80">
-            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by name, email or ID..."
-              value={search}
-              onChange={handleSearchChange}
-              className="w-full pl-9 pr-3.5 py-1.5 bg-[#f4f6fc] border-t border-t-slate-300/80 border-l border-l-slate-300/70 border-b border-b-white border-r border-r-white rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6355f6]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),0_1px_1px_rgba(255,255,255,0.8)] transition-all"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Search by name, email or ID…"
+            className="w-full sm:w-80"
+          />
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            {/* Table Header: Distinct Lavender/Violet Tint */}
-            <thead className="bg-gradient-to-r from-[#f4f1fe] via-[#f7f5ff] to-[#f4f1fe] border-b border-[#e9e3fe] text-[#2e1d68] font-black tracking-tight">
+        <div className="table-wrap">
+          <table className="table rows-animate" key={`${currentPage}-${search}`}>
+            <thead>
               <tr>
-                <th className="px-5 py-2.5">
-                  <div className="flex items-center gap-2 text-[#4338ca]">
-                    <div className="w-5 h-5 rounded-md bg-white/90 border border-[#ddd6fe] flex items-center justify-center shadow-2xs">
-                      <IdCard className="w-3 h-3 text-[#6355f6]" />
-                    </div>
-                    <span className="font-extrabold text-[11px] text-slate-800">Customer ID</span>
-                  </div>
-                </th>
-                <th className="px-5 py-2.5">
-                  <div className="flex items-center gap-2 text-[#4338ca]">
-                    <div className="w-5 h-5 rounded-md bg-white/90 border border-[#ddd6fe] flex items-center justify-center shadow-2xs">
-                      <User className="w-3 h-3 text-[#6355f6]" />
-                    </div>
-                    <span className="font-extrabold text-[11px] text-slate-800">Name</span>
-                  </div>
-                </th>
-                <th className="px-5 py-2.5">
-                  <div className="flex items-center gap-2 text-[#4338ca]">
-                    <div className="w-5 h-5 rounded-md bg-white/90 border border-[#ddd6fe] flex items-center justify-center shadow-2xs">
-                      <Mail className="w-3 h-3 text-[#6355f6]" />
-                    </div>
-                    <span className="font-extrabold text-[11px] text-slate-800">Email</span>
-                  </div>
-                </th>
-                <th className="px-5 py-2.5">
-                  <div className="flex items-center gap-2 text-[#4338ca]">
-                    <div className="w-5 h-5 rounded-md bg-white/90 border border-[#ddd6fe] flex items-center justify-center shadow-2xs">
-                      <Activity className="w-3 h-3 text-[#6355f6]" />
-                    </div>
-                    <span className="font-extrabold text-[11px] text-slate-800">Status</span>
-                  </div>
-                </th>
-                <th className="px-5 py-2.5 text-right">
-                  <div className="flex items-center justify-end gap-2 text-[#4338ca]">
-                    <div className="w-5 h-5 rounded-md bg-white/90 border border-[#ddd6fe] flex items-center justify-center shadow-2xs">
-                      <Settings2 className="w-3 h-3 text-[#6355f6]" />
-                    </div>
-                    <span className="font-extrabold text-[11px] text-slate-800">Actions</span>
-                  </div>
-                </th>
+                <th>Customer</th>
+                <th>Customer ID</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-
-            {/* Table Rows with Compact Height (py-2.5 instead of py-4.5) */}
-            <tbody className="divide-y divide-slate-100">
-              {currentCustomers.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                  {/* Customer ID */}
-                  <td className="px-5 py-2.5 font-mono font-bold text-slate-900 tracking-tight text-xs">
-                    {c.id}
+            <tbody>
+              {customers.map((c) => (
+                <tr key={c.id} className="row-clickable group" onClick={() => viewDetails(c)}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <Avatar first={c.first_name} last={c.last_name} id={c.id} />
+                      <span className="cell-strong">{c.first_name} {c.last_name}</span>
+                    </div>
                   </td>
-
-                  {/* Name */}
-                  <td className="px-5 py-2.5 font-bold text-slate-800 text-xs">
-                    {c.first_name} {c.last_name}
-                  </td>
-
-                  {/* Email */}
-                  <td className="px-5 py-2.5 text-slate-500 font-medium text-[11px]">
-                    {c.email}
-                  </td>
-
-                  {/* Status Badge: Borderless 3D Bulged Pill (lowercase) */}
-                  <td className="px-5 py-2.5">
-                    <span
-                      className="inline-flex items-center justify-center px-3 py-0.5 rounded-full text-[10px] font-bold select-none whitespace-nowrap"
-                      style={{
-                        background: 'linear-gradient(180deg, #ffffff 0%, #d1fae5 100%)',
-                        color: '#065f46',
-                        boxShadow:
-                          '0 1.5px 3.5px rgba(16, 185, 129, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(167, 243, 208, 0.5)',
-                      }}
-                    >
-                      {(c.status || 'active').toLowerCase().replace(/_/g, ' ')}
-                    </span>
-                  </td>
-
-                  {/* Action: Borderless 3D Bulged Purple View Ledger Button */}
-                  <td className="px-5 py-2.5 text-right">
+                  <td><span className="mono-chip">{c.id}</span></td>
+                  <td>{c.email}</td>
+                  <td><StatusBadge status={c.status || 'ACTIVE'} /></td>
+                  <td className="text-right">
                     <button
-                      onClick={() => viewDetails(c)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap select-none hover:opacity-90 active:translate-y-0.5"
-                      style={{
-                        background: 'linear-gradient(180deg, #ffffff 0%, #f4edff 100%)',
-                        color: '#6355f6',
-                        boxShadow:
-                          '0 1.5px 3.5px rgba(99, 85, 246, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(221, 214, 254, 0.5)',
-                      }}
+                      onClick={(e) => { e.stopPropagation(); viewDetails(c); }}
+                      className="btn btn-secondary btn-sm opacity-80 group-hover:opacity-100 group-hover:border-brand-200 group-hover:text-brand-700"
                     >
-                      <Eye className="w-3 h-3 text-[#6355f6]" />
-                      <span>View Ledger</span>
+                      <Eye /> View
                     </button>
                   </td>
                 </tr>
               ))}
-
-              {currentCustomers.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400 font-medium text-xs">
-                    No customers found matching "{search}"
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {loading && customers.length === 0 && <InlineLoader label="Loading customers…" />}
+          {!loading && customers.length === 0 && (
+            <EmptyState icon={Users} title="No customers found" description={search ? `Nothing matches “${search}”.` : 'No customer records yet.'} />
+          )}
         </div>
 
-        {/* Pagination matching reference screenshot */}
-        <div className="px-5 py-2.5 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
-          <div className="text-slate-400 font-medium text-[11px]">
-            Showing <span className="font-bold text-slate-700">{totalCount > 0 ? startIndex + 1 : 0} &ndash; {endIndex}</span> of{' '}
-            <span className="font-bold text-slate-700">{totalCount}</span> customers
-          </div>
-
-          {/* Page buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Dynamic sliding window pagination */}
-            {(() => {
-              const pages: (number | string)[] = [];
-              if (totalPages <= 7) {
-                for (let i = 1; i <= totalPages; i++) pages.push(i);
-              } else {
-                if (currentPage <= 4) {
-                  pages.push(1, 2, 3, 4, 5, '...', totalPages);
-                } else if (currentPage >= totalPages - 3) {
-                  pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-                } else {
-                  pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-                }
-              }
-
-              return pages.map((item, idx) => {
-                if (item === '...') {
-                  return (
-                    <span key={`ellipsis-${idx}`} className="text-slate-400 font-bold px-1 select-none">
-                      ...
-                    </span>
-                  );
-                }
-                const pageNum = item as number;
-                return (
-                  <button
-                    key={`page-${pageNum}`}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-extrabold transition-colors cursor-pointer ${
-                      currentPage === pageNum
-                        ? 'bg-[#6355f6] text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              });
-            })()}
-
-            <button
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
+        <Pagination page={currentPage} pageSize={pageSize} total={totalCount} onChange={setCurrentPage} noun="customers" />
       </div>
 
-      {/* Customer Inspection Modal */}
-      {selectedCust && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto p-5 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-              <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">
-                  {selectedCust.first_name} {selectedCust.last_name}
-                </h3>
-                <span className="font-mono text-xs text-slate-400">
-                  {selectedCust.id} &bull; {selectedCust.email}
-                </span>
+      <Modal
+        open={!!selectedCust}
+        onClose={() => setSelectedCust(null)}
+        size="lg"
+        title={selectedCust && (
+          <span className="flex items-center gap-3">
+            <Avatar first={selectedCust.first_name} last={selectedCust.last_name} id={selectedCust.id} size={40} />
+            <span>
+              <span className="block">{selectedCust.first_name} {selectedCust.last_name}</span>
+              <span className="block text-[13px] font-normal text-[var(--text-3)]">
+                <span className="font-mono">{selectedCust.id}</span> · {selectedCust.email}
+              </span>
+            </span>
+          </span>
+        )}
+      >
+        {!account ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-[76px] rounded-xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
+            {accountStats.map((s) => (
+              <div key={s.label} className="rounded-xl border border-[var(--border)] p-3.5 transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5">
+                <div className="flex items-center gap-2 text-[12.5px] text-[var(--text-3)]">
+                  <IconTile icon={s.icon} tone={s.tone} size="sm" className="!w-6 !h-6 !rounded-md [&_svg]:!w-3.5 [&_svg]:!h-3.5" />
+                  {s.label}
+                </div>
+                <p className="mt-2 text-[15px] font-semibold text-[var(--text)] truncate">{s.value}</p>
               </div>
-              <button
-                onClick={() => setSelectedCust(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            ))}
+          </div>
+        )}
 
-            {/* Account Info Cards */}
-            {account && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/70">
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase">Loyalty ID</div>
-                  <div className="font-mono font-bold text-xs text-slate-900 mt-0.5 truncate">{account.id}</div>
-                </div>
-                <div className="bg-blue-50/60 p-3 rounded-xl border border-blue-200/70">
-                  <div className="text-[10px] font-semibold text-blue-600 uppercase">Current Tier</div>
-                  <div className="font-bold text-blue-700 mt-0.5 text-xs">{account.current_tier_id}</div>
-                </div>
-                <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200/70">
-                  <div className="text-[10px] font-semibold text-emerald-600 uppercase">Points Balance</div>
-                  <div className="font-black text-emerald-700 text-sm mt-0.5">{account.cached_balance} pts</div>
-                </div>
-                <div className="bg-purple-50/60 p-3 rounded-xl border border-purple-200/70">
-                  <div className="text-[10px] font-semibold text-purple-600 uppercase">Qualifying Spend</div>
-                  <div className="font-bold text-purple-700 text-xs mt-0.5">₹{account.qualifying_net_spend?.toLocaleString()}</div>
-                </div>
-              </div>
-            )}
-
-            {/* Recent Orders */}
-            <div className="mb-4">
-              <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-1.5">Orders ({orders.length})</h4>
-              <div className="border border-slate-200/80 rounded-xl overflow-hidden max-h-36 overflow-y-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 font-bold">
-                    <tr>
-                      <th className="p-2">Order ID</th>
-                      <th className="p-2">Net Spend</th>
-                      <th className="p-2">Points Earned</th>
-                      <th className="p-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {orders.map((o) => (
-                      <tr key={o.id} className="hover:bg-slate-50/50">
-                        <td className="p-2 font-mono font-medium text-slate-800">{o.id}</td>
-                        <td className="p-2 font-bold text-slate-900">₹{o.net_amount}</td>
-                        <td className="p-2 text-blue-600 font-bold">+{o.points_earned}</td>
-                        <td className="p-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            {o.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {orders.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-3 text-center text-slate-400">No orders recorded</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Recent Ledger Transactions */}
-            <div>
-              <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-1.5">Ledger Entries ({txns.length})</h4>
-              <div className="border border-slate-200/80 rounded-xl overflow-hidden max-h-40 overflow-y-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 font-bold">
-                    <tr>
-                      <th className="p-2">Txn ID</th>
-                      <th className="p-2">Type</th>
-                      <th className="p-2">Amount</th>
-                      <th className="p-2">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {txns.map((t) => (
-                      <tr key={t.id} className="hover:bg-slate-50/50">
-                        <td className="p-2 font-mono text-slate-800">{t.id}</td>
-                        <td className="p-2 font-semibold text-slate-700">{t.transaction_type}</td>
-                        <td className={`p-2 font-black ${t.points_amount > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {t.points_amount > 0 ? `+${t.points_amount}` : t.points_amount}
-                        </td>
-                        <td className="p-2 text-slate-500 truncate max-w-xs">{t.reason}</td>
-                      </tr>
-                    ))}
-                    {txns.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-3 text-center text-slate-400">No transactions recorded</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <div className="segmented">
+            <button data-active={detailTab === 'orders'} onClick={() => setDetailTab('orders')}>
+              <span className="inline-flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5" /> Orders · {orders.length}</span>
+            </button>
+            <button data-active={detailTab === 'ledger'} onClick={() => setDetailTab('ledger')}>
+              <span className="inline-flex items-center gap-1.5"><Receipt className="w-3.5 h-3.5" /> Ledger · {txns.length}</span>
+            </button>
           </div>
         </div>
-      )}
+
+        <div key={detailTab} className="mt-4 rounded-xl border border-[var(--border)] overflow-hidden animate-fade-up">
+          <div>
+            {detailTab === 'orders' ? (
+              <table className="table">
+                <thead>
+                  <tr><th>Order ID</th><th className="cell-num">Net spend</th><th className="cell-num">Points</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id}>
+                      <td><span className="mono-chip">{o.id}</span></td>
+                      <td className="cell-num cell-strong">₹{Number(o.net_amount).toLocaleString()}</td>
+                      <td className="cell-num font-medium text-brand-600">+{o.points_earned}</td>
+                      <td><StatusBadge status={o.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr><th>Txn ID</th><th>Type</th><th className="cell-num">Amount</th><th>Reason</th></tr>
+                </thead>
+                <tbody>
+                  {txns.map((t) => (
+                    <tr key={t.id}>
+                      <td><span className="mono-chip">{t.id}</span></td>
+                      <td>{humanize(t.transaction_type)}</td>
+                      <td className={cx('cell-num font-semibold', t.points_amount > 0 ? 'text-emerald-600' : 'text-rose-600')}>
+                        {t.points_amount > 0 ? `+${t.points_amount}` : t.points_amount}
+                      </td>
+                      <td className="max-w-xs truncate">{t.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {detailTab === 'orders' && orders.length === 0 && <EmptyState icon={ShoppingCart} title="No orders recorded" />}
+            {detailTab === 'ledger' && txns.length === 0 && <EmptyState icon={ArrowUpRight} title="No transactions recorded" />}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -1,5 +1,5 @@
-name,min_spend,description,created_at,id,max_spend,multiplier
-Bronze,0.0,Entry level tier,2025-01-01T05:30:00+05:30,TIER-BRONZE,9999.0,1.0
-Gold,50000.0,Premium tier,2025-01-01T05:30:00+05:30,TIER-GOLD,99999.0,1.5
-Platinum,100000.0,Top tier VIP,2025-01-01T05:30:00+05:30,TIER-PLATINUM,,2.0
-Silver,10000.0,Mid level tier,2025-01-01T05:30:00+05:30,TIER-SILVER,49999.0,1.25
+id,name,min_spend,max_spend,multiplier,description,created_at
+TIER-BRONZE,Bronze,0.0,9999.0,1.0,Entry level tier,2025-01-01T00:00:00+00:00
+TIER-GOLD,Gold,50000.0,99999.0,1.5,Premium tier,2025-01-01T00:00:00+00:00
+TIER-PLATINUM,Platinum,100000.0,,2.0,Top tier VIP,2025-01-01T00:00:00+00:00
+TIER-SILVER,Silver,10000.0,49999.0,1.25,Mid level tier,2025-01-01T00:00:00+00:00

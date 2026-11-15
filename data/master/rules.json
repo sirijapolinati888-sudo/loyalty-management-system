@@ -1,13 +1,13 @@
 [
   {
-    "spend_threshold":100.0,
-    "expiry_days":365,
-    "description":"Earn 1 point per \u20b9100 of eligible net spend",
-    "name":"Standard \u20b9100 = 1 Point",
     "id":"RULE-ACCRUAL-01",
+    "name":"Standard \u20b9100 = 1 Point",
     "rule_type":"ACCRUAL",
+    "spend_threshold":100.0,
     "points_awarded":1,
+    "expiry_days":365,
     "is_active":true,
-    "created_at":"2025-01-01T05:30:00+05:30"
+    "description":"Earn 1 point per \u20b9100 of eligible net spend",
+    "created_at":"2025-01-01T00:00:00+00:00"
   }
 ]

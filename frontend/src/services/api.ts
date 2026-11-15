@@ -133,5 +133,7 @@ export const LoyaltyAPI = {
   getValidationReport: () => api.get('/validation/report').then(r => r.data),
 
   // Generator
-  triggerGeneration: (mode: string) => api.post(`/generator/run?mode=${mode}`).then(r => r.data),
+  triggerGeneration: (mode: string, injectAnomalies = true) =>
+    api.post('/generator/run', null, { params: { mode, inject_anomalies: injectAnomalies } }).then(r => r.data),
+  getGenerationStatus: () => api.get('/generator/status').then(r => r.data),
 };

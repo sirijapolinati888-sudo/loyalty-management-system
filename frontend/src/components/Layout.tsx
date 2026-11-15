@@ -1,44 +1,58 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth, type UserRole } from '../context/AuthContext';
-import logoImg from '../assets/Logo.png';
+import { Logo } from './Logo';
 import {
   LayoutDashboard, Users, ShoppingCart, Receipt, Award,
   Clock, ShieldCheck, AlertTriangle, Database, FileSpreadsheet,
   Store, BarChart3, Settings2, LogOut, ChevronDown, Search, Bell,
-  Menu, X
+  Menu, X, ChevronRight
 } from 'lucide-react';
+import { cx } from './ui';
 
 interface NavItemConfig {
   name: string;
   path: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   roles: UserRole[];
+  group: 'Overview' | 'Operations' | 'Programme' | 'Audit & Data';
 }
 
 const navItems: NavItemConfig[] = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['OPERATIONS_MANAGER', 'ANALYST'] },
-  { name: 'Customers', path: '/customers', icon: Users, roles: ['OPERATIONS_MANAGER', 'ANALYST', 'STORE_OPERATOR', 'CUSTOMER'] },
-  { name: 'Orders', path: '/orders', icon: ShoppingCart, roles: ['OPERATIONS_MANAGER', 'STORE_OPERATOR', 'CUSTOMER'] },
-  { name: 'Points Ledger', path: '/ledger', icon: Receipt, roles: ['OPERATIONS_MANAGER', 'CUSTOMER'] },
-  { name: 'Redemptions', path: '/redemptions', icon: Award, roles: ['OPERATIONS_MANAGER', 'CUSTOMER', 'ANALYST'] },
-  { name: 'Expiration', path: '/expiration', icon: Clock, roles: ['OPERATIONS_MANAGER'] },
-  { name: 'Membership Tiers', path: '/tiers', icon: ShieldCheck, roles: ['OPERATIONS_MANAGER', 'ANALYST'] },
-  { name: 'Anomaly Monitoring', path: '/anomalies', icon: AlertTriangle, roles: ['OPERATIONS_MANAGER'] },
-  { name: 'Data Generator', path: '/generator', icon: Database, roles: ['OPERATIONS_MANAGER'] },
-  { name: 'Validation & Reports', path: '/validation', icon: FileSpreadsheet, roles: ['OPERATIONS_MANAGER', 'ANALYST'] },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['OPERATIONS_MANAGER', 'ANALYST'], group: 'Overview' },
+  { name: 'Customers', path: '/customers', icon: Users, roles: ['OPERATIONS_MANAGER', 'ANALYST', 'STORE_OPERATOR', 'CUSTOMER'], group: 'Operations' },
+  { name: 'Orders', path: '/orders', icon: ShoppingCart, roles: ['OPERATIONS_MANAGER', 'STORE_OPERATOR', 'CUSTOMER'], group: 'Operations' },
+  { name: 'Points Ledger', path: '/ledger', icon: Receipt, roles: ['OPERATIONS_MANAGER', 'CUSTOMER'], group: 'Operations' },
+  { name: 'Redemptions', path: '/redemptions', icon: Award, roles: ['OPERATIONS_MANAGER', 'CUSTOMER', 'ANALYST'], group: 'Operations' },
+  { name: 'Expiration', path: '/expiration', icon: Clock, roles: ['OPERATIONS_MANAGER'], group: 'Operations' },
+  { name: 'Membership Tiers', path: '/tiers', icon: ShieldCheck, roles: ['OPERATIONS_MANAGER', 'ANALYST'], group: 'Programme' },
+  { name: 'Anomaly Monitoring', path: '/anomalies', icon: AlertTriangle, roles: ['OPERATIONS_MANAGER'], group: 'Audit & Data' },
+  { name: 'Validation & Reports', path: '/validation', icon: FileSpreadsheet, roles: ['OPERATIONS_MANAGER', 'ANALYST'], group: 'Audit & Data' },
+  { name: 'Data Generator', path: '/generator', icon: Database, roles: ['OPERATIONS_MANAGER'], group: 'Audit & Data' },
 ];
+
+const groupOrder: NavItemConfig['group'][] = ['Overview', 'Operations', 'Programme', 'Audit & Data'];
+
+const roleMeta: Record<UserRole, { title: string; subtitle: string; icon: React.ComponentType<{ className?: string }> }> = {
+  OPERATIONS_MANAGER: { title: 'Operations Manager', subtitle: 'Full ledger audit & batch control', icon: Settings2 },
+  STORE_OPERATOR: { title: 'Store Operator', subtitle: 'Order & return processing', icon: Store },
+  ANALYST: { title: 'Merchandising Analyst', subtitle: 'Tiers, rules & catalogue strategy', icon: BarChart3 },
+  CUSTOMER: { title: 'Customer', subtitle: 'Earned points, history & rewards', icon: Users },
+};
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
-  // Close mobile drawer when navigating
+  // Close mobile drawer and reset scroll when navigating
   useEffect(() => {
     setMobileMenuOpen(false);
+    mainRef.current?.scrollTo({ top: 0 });
   }, [location.pathname]);
 
   // Close profile dropdown on outside click
@@ -52,272 +66,231 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const roleMeta: Record<UserRole, { title: string; badge: string; icon: React.ComponentType<{ className?: string }> }> = {
-    OPERATIONS_MANAGER: {
-      title: 'Operations Manager',
-      badge: 'Full Ledger Audit & Batch Control',
-      icon: Settings2,
-    },
-    STORE_OPERATOR: {
-      title: 'Store/Warehouse Operator',
-      badge: 'Order & Return Processing',
-      icon: Store,
-    },
-    ANALYST: {
-      title: 'Merchandising Analyst',
-      badge: 'Tiers, Rules & Catalogue Strategy',
-      icon: BarChart3,
-    },
-    CUSTOMER: {
-      title: 'Customer Experience',
-      badge: user?.customer_id ? `Account ${user.customer_id}` : 'Earned Points, History & Rewards',
-      icon: Users,
-    },
-  };
-
-  const currentRole = user ? roleMeta[user.role] : {
-    title: 'Operations Manager',
-    badge: 'Full Ledger Audit & Batch Control',
-    icon: Settings2,
-  };
-
+  const currentRole = user ? roleMeta[user.role] : roleMeta.OPERATIONS_MANAGER;
+  const RoleIcon = currentRole.icon;
   const visibleNavItems = navItems.filter(item => user && item.roles.includes(user.role));
+  const activeItem = visibleNavItems.find(i => i.path === location.pathname);
+  const initials = (user?.full_name || 'User')
+    .replace(/\(.*\)/, '')
+    .trim()
+    .split(/\s+/)
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  const displayName = (user?.full_name || 'User').replace(/\s*\(.*\)\s*/, '');
 
   return (
-    <div className="flex h-screen w-full max-w-full bg-[#f1f3fb] text-slate-900 antialiased overflow-hidden relative">
-      {/* Mobile Drawer Backdrop */}
-      {mobileMenuOpen && (
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden backdrop-blur-xs transition-opacity duration-200"
-        />
-      )}
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--bg)]">
+      {/* Mobile drawer backdrop */}
+      <div
+        onClick={() => setMobileMenuOpen(false)}
+        className={cx(
+          'fixed inset-0 z-40 bg-[#0b0a1f]/50 backdrop-blur-sm lg:hidden transition-opacity duration-300',
+          mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
+        )}
+      />
 
-      {/* Sidebar (Desktop Persistent + Mobile Drawer) */}
+      {/* Sidebar */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 w-[240px] bg-gradient-to-b from-[#080720] via-[#0b0c2a] to-[#160d3d] text-slate-300 flex flex-col shrink-0 z-50 transition-transform duration-300 ease-in-out overflow-hidden lg:static ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 hidden lg:flex'
-        }`}
+        className={cx(
+          'fixed inset-y-0 left-0 z-50 w-[264px] flex flex-col shrink-0 overflow-hidden text-slate-300',
+          'bg-[#0b0a1f] lg:static lg:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
       >
-        {/* Decorative subtle wavy luminous glow at the bottom matching reference */}
-        <div className="absolute -bottom-10 -left-10 -right-10 h-44 bg-gradient-to-t from-[#6355f6]/25 via-[#8d7dfb]/10 to-transparent blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-16 left-0 right-0 h-32 opacity-40 pointer-events-none">
-          <svg viewBox="0 0 240 120" preserveAspectRatio="none" className="w-full h-full fill-[#6355f6]/30">
-            <path d="M0,60 C40,90 80,30 140,70 C190,100 210,40 240,60 L240,120 L0,120 Z" />
-          </svg>
-        </div>
+        {/* Ambient light */}
+        <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-brand-600/25 blur-3xl animate-drift" />
+        <div className="pointer-events-none absolute -bottom-32 -right-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl animate-drift" style={{ animationDelay: '-9s' }} />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
-        {/* Brand header */}
-        <div className="h-[60px] flex items-center justify-between px-5 z-10 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <img
-              src={logoImg}
-              alt="YottaFlex.ai Logo"
-              className="w-7 h-7 object-contain drop-shadow-[0_2px_8px_rgba(99,85,246,0.6)] shrink-0"
-            />
-            <div>
-              <h1 className="font-extrabold text-white text-[15px] tracking-tight leading-tight">YottaFlex.ai</h1>
-              <span className="text-[10px] text-indigo-300/80 font-medium tracking-wide">Loyalty Ledger</span>
-            </div>
-          </div>
-
-          {/* Close button on mobile */}
+        {/* Brand */}
+        <div className="relative h-[68px] flex items-center justify-between px-5 shrink-0">
+          <NavLink to={visibleNavItems[0]?.path || '/'} className="group logo-hover">
+            <Logo size={38} tone="dark" />
+          </NavLink>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="lg:hidden w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+            aria-label="Close navigation"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Dynamic Navigation (Compact, no scrollbar) */}
-        <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-hidden flex flex-col justify-evenly z-10">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon;
+        {/* Navigation */}
+        <nav className="relative flex-1 overflow-y-auto px-3 pb-4 pt-2 [&::-webkit-scrollbar-thumb]:bg-white/10">
+          {groupOrder.map((group) => {
+            const items = visibleNavItems.filter(i => i.group === group);
+            if (!items.length) return null;
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-3 py-1.5 rounded-full text-[12px] tracking-tight transition-all relative ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#6e2fef] via-[#7b3df3] to-[#8d54f8] text-white font-bold shadow-[0_3px_10px_rgba(110,47,239,0.4)]'
-                      : 'text-slate-300/80 hover:text-white hover:bg-white/[0.06] font-medium'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div
-                      className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
-                        isActive
-                          ? 'bg-white/15 text-white'
-                          : 'text-slate-300/80'
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
-                    </div>
-                    <span className="truncate">{item.name}</span>
-                  </>
-                )}
-              </NavLink>
+              <div key={group} className="mb-5">
+                <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{group}</p>
+                <div className="space-y-0.5">
+                  {items.map((item, idx) => {
+                    const Icon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        end
+                        style={{ animationDelay: `${0.04 * idx}s` }}
+                        className={({ isActive }) => cx(
+                          'group relative flex items-center gap-3 h-10 px-3 rounded-[10px] text-[13.5px] font-medium transition-all duration-300 animate-[slide-in-left_0.5s_var(--ease-out-expo)_both]',
+                          isActive
+                            ? 'text-white bg-gradient-to-r from-brand-600/90 to-brand-500/60 shadow-[0_8px_24px_-8px_rgba(98,54,236,0.8)]'
+                            : 'text-slate-400 hover:text-white hover:bg-white/[0.05]',
+                        )}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <span className={cx(
+                              'absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-white transition-all duration-300',
+                              isActive ? 'opacity-100' : 'opacity-0 -translate-x-1',
+                            )} />
+                            <Icon
+                              className={cx('w-[18px] h-[18px] shrink-0 transition-transform duration-300', !isActive && 'group-hover:scale-110')}
+                              strokeWidth={isActive ? 2.2 : 1.9}
+                            />
+                            <span className="truncate">{item.name}</span>
+                            {!isActive && (
+                              <ChevronRight className="ml-auto w-3.5 h-3.5 opacity-0 -translate-x-1 transition-all duration-300 group-hover:opacity-60 group-hover:translate-x-0" />
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div className="p-3 pt-1 space-y-1.5 z-10 shrink-0">
-          <button
-            onClick={() => logout()}
-            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-slate-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate">Sign Out ({user?.role?.replace('_', ' ')})</span>
-          </button>
-
-          <div className="text-[9.5px] text-slate-500 px-1 font-medium">
-            Seed: 20261022 &bull; YottaFlex 2.0
+        {/* Footer: user card */}
+        <div className="relative p-3 shrink-0 border-t border-white/[0.06]">
+          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.04] ring-1 ring-white/[0.06]">
+            <span className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-cyan-400 flex items-center justify-center text-[12px] font-semibold text-white shrink-0">
+              {initials}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium text-white truncate">{displayName}</p>
+              <p className="text-[11.5px] text-slate-400 truncate">{currentRole.title}</p>
+            </div>
+            <button
+              onClick={() => logout()}
+              className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
+          <p className="mt-2.5 px-1 text-[11px] text-slate-600">Seed 20261022 · v2.0</p>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full overflow-hidden bg-[#f1f3fb]">
-        {/* Top Navbar */}
-        <header className="h-[64px] sm:h-[72px] bg-white/80 backdrop-blur-md px-3 sm:px-6 lg:px-8 flex items-center justify-between shrink-0 z-10 border-b border-indigo-50/50">
-          {/* Left: Mobile Toggle & Title */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {/* Hamburger Button for Mobile/Tablet */}
+      {/* Main column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header
+          className={cx(
+            'h-[68px] shrink-0 z-30 flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 transition-all duration-300',
+            scrolled
+              ? 'bg-white/80 backdrop-blur-xl border-b border-[var(--border)] shadow-[0_1px_0_rgba(16,18,40,0.02)]'
+              : 'bg-transparent border-b border-transparent',
+          )}
+        >
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center hover:bg-slate-50 transition-colors cursor-pointer shadow-2xs shrink-0"
-              aria-label="Open Navigation Menu"
+              className="lg:hidden btn btn-secondary btn-icon"
+              aria-label="Open navigation"
             >
-              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Menu />
             </button>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2.5">
-                <h2 className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-none truncate">
-                  Enterprise Loyalty Ledger
-                </h2>
-                <div
-                  className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0 whitespace-nowrap select-none"
-                  style={{
-                    background: 'linear-gradient(180deg, #ffffff 0%, #ede8fe 100%)',
-                    color: '#53389e',
-                    boxShadow:
-                      '0 2px 4px rgba(99, 85, 246, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -1px 1px rgba(199, 185, 255, 0.45)',
-                  }}
-                >
-                  <Users className="w-2.5 h-2.5 text-[#6355f6] stroke-[2.5]" />
-                  <span>{currentRole.title}</span>
-                </div>
-              </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-1 leading-none hidden sm:block truncate">
-                Full Ledger Audit &amp; Batch Control
-              </p>
-            </div>
+            <nav className="hidden sm:flex items-center gap-2 text-[13.5px] min-w-0" aria-label="Breadcrumb">
+              <span className="text-[var(--text-3)]">{activeItem?.group || 'Workspace'}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+              <span key={activeItem?.path} className="font-semibold text-[var(--text)] truncate animate-[fade-down_0.4s_ease_both]">
+                {activeItem?.name || 'Overview'}
+              </span>
+            </nav>
+            <span className="sm:hidden font-semibold text-[var(--text)] truncate">{activeItem?.name}</span>
           </div>
 
-          {/* Right: Search, Notification & Profile */}
-          <div className="flex items-center gap-1.5 sm:gap-3.5 shrink-0">
-            {/* 3D Inset Beveled Search Bar */}
-            <div className="relative hidden md:block w-56 lg:w-64 xl:w-72 2xl:w-80">
-              <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="relative hidden md:block group">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none transition-colors group-focus-within:text-brand-600" />
               <input
                 type="text"
-                readOnly
-                placeholder="Search customers, orders, transactions..."
-                className="w-full pl-9 pr-4 py-1.5 bg-[#f4f6fc] border-t border-t-slate-300/80 border-l border-l-slate-300/70 border-b border-b-white border-r border-r-white rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),0_1px_1px_rgba(255,255,255,0.8)] transition-all cursor-default"
+                placeholder="Search…"
+                className="input input-with-icon h-[38px] w-56 lg:w-64 pr-14 transition-[width] duration-500 focus:w-72 lg:focus:w-80"
               />
+              <span className="kbd absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">Ctrl K</span>
             </div>
 
-            {/* Notification bell */}
-            <button className="relative w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shrink-0">
-              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <button className="btn btn-secondary btn-icon relative" aria-label="Notifications">
+              <Bell />
+              <span className="absolute top-2 right-2.5 text-rose-500 live-dot" style={{ width: 7, height: 7 }} />
             </button>
 
-            {/* Interactive Profile Dropdown */}
-            <div className="relative shrink-0" ref={profileMenuRef}>
+            <div className="relative" ref={profileMenuRef}>
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="flex items-center gap-1 sm:gap-2 p-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer focus:outline-none group"
+                className="flex items-center gap-2.5 h-[38px] pl-1 pr-2.5 rounded-full bg-white border border-[var(--border)] shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-sm)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
                 aria-expanded={profileMenuOpen}
               >
-                <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-gradient-to-tr from-[#6355f6] to-[#8d7dfb] flex items-center justify-center font-bold text-white shadow-xs text-[10px] sm:text-[11px] shrink-0">
-                  {user?.full_name
-                    ? user.full_name
-                        .split(' ')
-                        .map((n: string) => n[0])
-                        .slice(0, 2)
-                        .join('')
-                    : 'SC'}
-                </div>
-                <div className="text-left hidden md:block pr-0.5">
-                  <div className="font-bold text-[11px] text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">
-                    {user?.full_name || 'Sarah Connor'}
-                  </div>
-                  <div className="text-[9px] text-slate-400 font-medium leading-none">
-                    {currentRole.title}
-                  </div>
-                </div>
-                <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-transform shrink-0" />
+                <span className="w-[30px] h-[30px] rounded-full bg-gradient-to-br from-brand-500 to-cyan-400 flex items-center justify-center text-[11.5px] font-semibold text-white">
+                  {initials}
+                </span>
+                <span className="hidden md:block text-left leading-tight">
+                  <span className="block text-[13px] font-semibold text-[var(--text)] max-w-[140px] truncate">{displayName}</span>
+                </span>
+                <ChevronDown className={cx('w-4 h-4 text-[var(--text-3)] transition-transform duration-300', profileMenuOpen && 'rotate-180')} />
               </button>
 
-              {/* Dropdown Menu */}
               {profileMenuOpen && (
-                <div 
-                  style={{
-                    background: 'linear-gradient(180deg, #ffffff 0%, #faf8ff 100%)',
-                    boxShadow: '0 20px 42px -8px rgba(99, 85, 246, 0.25), 0 8px 18px -4px rgba(0, 0, 0, 0.08), inset 0 1.5px 1.5px #ffffff, 0 0 0 1px rgba(110, 47, 239, 0.12)',
-                  }}
-                  className="absolute right-0 mt-2 min-w-[260px] max-w-[340px] rounded-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-md"
-                >
-                  <div className="px-3.5 py-2.5 border-b border-indigo-50/70">
-                    <div className="font-extrabold text-xs text-slate-900 leading-tight">
-                      {user?.full_name || 'Sarah Connor'}
-                    </div>
-                    <div className="text-[11px] text-slate-500 break-all font-medium mt-0.5 select-all">
-                      {user?.email || 'ops@yottaflex.ai'}
-                    </div>
-                    <div className="mt-2">
-                      <span
-                        style={{
-                          background: 'linear-gradient(180deg, #ffffff 0%, #ede8fe 100%)',
-                          color: '#53389e',
-                          boxShadow:
-                            '0 3px 6px -1px rgba(99, 85, 246, 0.22), inset 0 1.5px 1px rgba(255, 255, 255, 1), inset 0 -1.5px 2px rgba(199, 185, 255, 0.5), 0 0 0 1px rgba(110, 47, 239, 0.15)',
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-tight select-none"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#6355f6] shadow-xs" />
-                        <span>{currentRole.title}</span>
-                      </span>
+                <div className="dropdown-panel absolute right-0 mt-2 w-72 p-2 z-50">
+                  <div className="p-3 flex items-start gap-3">
+                    <span className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-cyan-400 flex items-center justify-center text-[13px] font-semibold text-white shrink-0">
+                      {initials}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[var(--text)] truncate">{displayName}</p>
+                      <p className="text-[12.5px] text-[var(--text-3)] truncate">{user?.email}</p>
                     </div>
                   </div>
-
-                  <div className="p-1 pt-1.5">
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50/80 rounded-xl transition-colors font-bold text-left cursor-pointer"
-                    >
-                      <LogOut className="w-3.5 h-3.5 text-red-500 stroke-[2.2]" />
-                      <span>Sign Out</span>
-                    </button>
+                  <div className="mx-3 mb-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] flex items-center gap-3">
+                    <span className="icon-tile icon-tile-sm bg-brand-50 text-brand-600"><RoleIcon className="w-4 h-4" /></span>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium text-[var(--text)]">{currentRole.title}</p>
+                      <p className="text-[12px] text-[var(--text-3)] truncate">
+                        {user?.role === 'CUSTOMER' && user?.customer_id ? `Account ${user.customer_id}` : currentRole.subtitle}
+                      </p>
+                    </div>
                   </div>
+                  <div className="divider my-1" />
+                  <button
+                    onClick={() => { setProfileMenuOpen(false); logout(); }}
+                    className="w-full flex items-center gap-2.5 px-3 h-10 rounded-lg text-[13.5px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" /> Sign out
+                  </button>
                 </div>
               )}
             </div>
           </div>
         </header>
 
-        {/* Scrollable Page Body with Responsive Padding */}
-        <main className="flex-1 p-2.5 sm:p-4 lg:p-6 overflow-y-auto overflow-x-hidden w-full">
-          {children}
+        <main
+          ref={mainRef}
+          id="app-main-container"
+          onScroll={(e) => setScrolled((e.target as HTMLElement).scrollTop > 4)}
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+        >
+          <div key={location.pathname} className="page-enter mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8 pt-2 pb-12">
+            {children}
+          </div>
         </main>
       </div>
     </div>

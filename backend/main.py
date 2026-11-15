@@ -14,4 +14,10 @@ if __name__ == "__main__":
     import uvicorn
     print(f"Starting Loyalty Management System Backend from {backend_dir}...")
     print("Swagger docs will be available at: http://localhost:8000/api/v1/docs")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_dirs=[str(backend_dir / "app")],
+    )

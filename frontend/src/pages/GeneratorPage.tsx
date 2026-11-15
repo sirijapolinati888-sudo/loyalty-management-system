@@ -1,255 +1,302 @@
-import React, { useState } from 'react';
-import { LoyaltyAPI } from '../services/api';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { LoyaltyAPI, TabCache } from '../services/api';
 import {
-  Database,
-  Settings,
-  Rocket,
-  Layers,
-  Dices,
-  GitBranch,
-  HardDrive,
-  Sparkles,
-  CheckCircle2,
-  RefreshCw
+  Database, Rocket, Layers, Dices, GitBranch, HardDrive, Sparkles, CheckCircle2, AlertCircle,
+  RefreshCw, Users, ShoppingCart, Receipt, Check, AlertTriangle, ShieldAlert
 } from 'lucide-react';
+import { PageHeader, Card, cx } from '../components/ui';
+
+const modes = [
+  {
+    id: 'starter' as const,
+    name: 'Starter',
+    icon: Rocket,
+    tagline: 'Fast to generate (under a minute). Ideal for demos and local development.',
+    stats: [{ icon: Users, v: '100', l: 'customers' }, { icon: ShoppingCart, v: '500', l: 'orders' }, { icon: Receipt, v: '~600', l: 'transactions' }],
+  },
+  {
+    id: 'full' as const,
+    name: 'Full scale',
+    icon: Layers,
+    tagline: 'Production-like volume. Can take a long time and needs plenty of memory.',
+    stats: [{ icon: Users, v: '20K', l: 'customers' }, { icon: ShoppingCart, v: '100K', l: 'orders' }, { icon: Receipt, v: '100K+', l: 'transactions' }],
+  },
+];
+
+// Pipeline steps, matched against the progress messages the backend reports
+const pipeline: { label: string; match: RegExp }[] = [
+  { label: 'Clear data', match: /Clearing/ },
+  { label: 'Customers', match: /^1\.|Starting Synthetic/ },
+  { label: 'Orders', match: /^2\./ },
+  { label: 'Returns', match: /^3\./ },
+  { label: 'Redemptions', match: /^4\./ },
+  { label: 'Expiry', match: /^5\.|Completed Successfully/ },
+  { label: 'Anomalies', match: /Injecting/ },
+  { label: 'Validation', match: /detection/ },
+];
+
+type JobStatus = {
+  state: 'idle' | 'running' | 'completed' | 'failed';
+  mode: string | null;
+  message: string;
+  started_at: string | null;
+  finished_at: string | null;
+  counts: Record<string, number> | null;
+  error: string | null;
+};
 
 export const GeneratorPage: React.FC = () => {
   const [mode, setMode] = useState<'starter' | 'full'>('starter');
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [injectAnomalies, setInjectAnomalies] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+  const [status, setStatus] = useState<JobStatus | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(-1);
+  const pollRef = useRef<number | null>(null);
+
+  const running = status?.state === 'running';
+
+  const stopPolling = () => {
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    pollRef.current = null;
+  };
+
+  const applyStatus = useCallback((s: JobStatus) => {
+    setStatus(s);
+    const idx = pipeline.findIndex((p) => p.match.test(s.message || ''));
+    if (idx >= 0) setActiveStep((prev) => Math.max(prev, idx));
+    if (s.state !== 'running') {
+      stopPolling();
+      // Every cached page is stale once the dataset is replaced
+      if (s.state === 'completed') TabCache.invalidate();
+    }
+  }, []);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    pollRef.current = window.setInterval(() => {
+      LoyaltyAPI.getGenerationStatus().then(applyStatus).catch(() => {});
+    }, 1200);
+  }, [applyStatus]);
+
+  // Resume tracking if a run is already in progress (e.g. after navigating away)
+  useEffect(() => {
+    LoyaltyAPI.getGenerationStatus()
+      .then((s: JobStatus) => {
+        applyStatus(s);
+        if (s.state === 'running') startPolling();
+      })
+      .catch(() => {});
+    return stopPolling;
+  }, [applyStatus, startPolling]);
 
   const handleGenerate = async () => {
-    setLoading(true);
-    setStatusMsg(`Generating dataset in ${mode} mode (Fixed seed: 20261022)...`);
+    setConfirming(false);
+    setRequestError(null);
+    setActiveStep(-1);
     try {
-      const res = await LoyaltyAPI.triggerGeneration(mode);
-      setStatusMsg(res.message);
+      const s = await LoyaltyAPI.triggerGeneration(mode, injectAnomalies);
+      applyStatus(s);
+      startPolling();
     } catch (e: any) {
-      setStatusMsg(`Error: ${e.message}`);
-    } finally {
-      setLoading(false);
+      const msg = e.response?.data?.detail || e.message;
+      setRequestError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
   };
 
+  const stepState = (i: number) => {
+    if (!status || status.state === 'idle' || activeStep < 0) return 'pending';
+    if (status.state === 'completed') return i <= activeStep ? 'done' : 'skipped';
+    if (i < activeStep) return 'done';
+    if (i === activeStep) return status.state === 'failed' ? 'failed' : 'active';
+    return 'pending';
+  };
+
+  const elapsed = status?.started_at
+    ? Math.max(0, Math.round(((status.finished_at ? new Date(status.finished_at) : new Date()).getTime() - new Date(status.started_at).getTime()) / 1000))
+    : 0;
+
   return (
-    <div className="space-y-4">
-      {/* Top Header: Title & Subtitle */}
-      <div className="flex items-center justify-between px-1 py-1">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6355f6] to-[#8d7dfb] text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/25">
-            <Database className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
-              Synthetic Data Generation Engine
-            </h1>
-            <p className="text-xs text-slate-400 font-medium mt-1 leading-none">
-              Generate scalable, statistically sound, and fully reproducible loyalty datasets
-            </p>
-          </div>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        icon={Database}
+        title="Data generator"
+        description="Rebuild the loyalty dataset from the seeded synthetic generator. Fully reproducible."
+      />
 
-      {/* Main Container Card */}
-      <div 
-        className="bg-white rounded-3xl p-7 border border-slate-100 space-y-6"
-        style={{
-          boxShadow: '0 20px 40px -15px rgba(99, 85, 246, 0.08), 0 0 1px 1px rgba(0, 0, 0, 0.04)'
-        }}
-      >
-        {/* Section Header: Generation Mode */}
-        <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-[#43269c] stroke-[2.2]" />
-          <h2 className="text-sm font-black text-slate-900 tracking-tight">
-            Generation Mode
-          </h2>
-        </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
+            {modes.map((m) => {
+              const active = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  disabled={running}
+                  onClick={() => { setMode(m.id); setConfirming(false); }}
+                  className={cx(
+                    'card group relative text-left p-5 cursor-pointer overflow-hidden transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-70',
+                    active ? '!border-brand-500 ring-4 ring-brand-500/10 shadow-[var(--shadow-lg)] -translate-y-0.5' : 'card-hover',
+                  )}
+                >
+                  <div className={cx(
+                    'absolute -top-20 -right-20 w-56 h-56 rounded-full bg-gradient-to-br from-brand-400/25 to-cyan-300/20 blur-2xl transition-all duration-700',
+                    active ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover:opacity-60',
+                  )} />
+                  <div className="relative flex items-start justify-between">
+                    <span className={cx(
+                      'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500',
+                      active ? 'bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-[var(--shadow-brand)]' : 'bg-brand-50 text-brand-600 group-hover:scale-105',
+                    )}>
+                      <m.icon className="w-[22px] h-[22px]" />
+                    </span>
+                    <span className={cx(
+                      'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+                      active ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-300 text-transparent',
+                    )}>
+                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    </span>
+                  </div>
+                  <h3 className="relative mt-4 text-lg font-semibold text-[var(--text)]">{m.name} mode</h3>
+                  <p className="relative mt-1 text-[13.5px] text-[var(--text-3)] leading-relaxed">{m.tagline}</p>
+                  <div className="relative mt-5 grid grid-cols-3 gap-2">
+                    {m.stats.map((s) => (
+                      <div key={s.l} className="rounded-xl bg-[var(--surface-2)] border border-[var(--border)] px-3 py-2.5">
+                        <s.icon className="w-4 h-4 text-[var(--text-3)]" />
+                        <p className="mt-1.5 text-[17px] font-bold text-[var(--text)] leading-none">{s.v}</p>
+                        <p className="mt-1 text-[12px] text-[var(--text-3)]">{s.l}</p>
+                      </div>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Mode Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Starter Mode Card */}
-          <div
-            onClick={() => setMode('starter')}
-            className={`p-5 rounded-2xl cursor-pointer transition-all duration-300 flex items-center justify-between relative overflow-hidden group select-none`}
-            style={{
-              background: mode === 'starter'
-                ? 'linear-gradient(135deg, #ffffff 0%, #f7f4ff 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
-              boxShadow: mode === 'starter'
-                ? '0 14px 28px -6px rgba(110, 47, 239, 0.22), 0 6px 12px -4px rgba(110, 47, 239, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1), 0 0 0 2px #6e2fef'
-                : '0 8px 18px -4px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.04), inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-              transform: mode === 'starter' ? 'translateY(-2px)' : 'translateY(0)'
-            }}
+          <Card
+            className="animate-fade-up"
+            title="Generation pipeline"
+            subtitle={running ? status?.message : 'Runs in dependency order, deterministically'}
+            icon={GitBranch}
+            tone="violet"
+            actions={status?.started_at && status.state !== 'idle' && (
+              <span className="text-[13px] text-[var(--text-3)] tabular">{elapsed}s</span>
+            )}
           >
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300`}
-                style={{
-                  background: mode === 'starter'
-                    ? 'linear-gradient(135deg, #ede5fd 0%, #dfd1fa 100%)'
-                    : 'linear-gradient(135deg, #f4f3fb 0%, #ebe7f7 100%)',
-                  boxShadow: mode === 'starter'
-                    ? '0 4px 10px rgba(110, 47, 239, 0.25), inset 0 1px 1px #fff'
-                    : '0 2px 5px rgba(0,0,0,0.04), inset 0 1px 1px #fff',
-                  color: mode === 'starter' ? '#410cce' : '#553b9f'
-                }}
-              >
-                <Rocket className="w-5 h-5 stroke-[2.2]" />
+            <ol className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {pipeline.map((p, i) => {
+                const st = stepState(i);
+                return (
+                  <li
+                    key={p.label}
+                    className={cx(
+                      'flex items-center gap-2.5 h-11 px-3 rounded-xl border text-[13px] font-medium transition-all duration-500',
+                      st === 'done' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                      st === 'active' && 'border-brand-300 bg-brand-50 text-brand-700 shadow-[0_0_0_4px_rgba(98,54,236,0.08)]',
+                      st === 'failed' && 'border-rose-200 bg-rose-50 text-rose-700',
+                      (st === 'pending' || st === 'skipped') && 'border-[var(--border)] bg-white text-[var(--text-3)]',
+                      st === 'skipped' && 'opacity-50',
+                    )}
+                  >
+                    <span className={cx(
+                      'w-6 h-6 rounded-full text-[11px] flex items-center justify-center shrink-0 transition-colors duration-500',
+                      st === 'done' ? 'bg-emerald-500 text-white' : st === 'active' ? 'bg-brand-600 text-white' : st === 'failed' ? 'bg-rose-500 text-white' : 'bg-slate-100',
+                    )}>
+                      {st === 'done' ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : st === 'active' ? <RefreshCw className="w-3 h-3 animate-spin" /> : i + 1}
+                    </span>
+                    <span className="truncate">{p.label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {status?.state === 'completed' && status.counts && (
+              <div className="mt-5 grid grid-cols-2 sm:grid-cols-5 gap-2.5 stagger">
+                {Object.entries(status.counts).map(([k, v]) => (
+                  <div key={k} className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-3">
+                    <p className="text-[12px] text-[var(--text-3)] capitalize">{k}</p>
+                    <p className="mt-1 text-lg font-bold text-[var(--text)] tabular">{v.toLocaleString()}</p>
+                  </div>
+                ))}
               </div>
-              <div>
-                <div className="font-extrabold text-sm text-slate-900 tracking-tight">Starter Mode</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  100 customers &bull; 500 orders &bull; 1,500 points txns
+            )}
+          </Card>
+        </div>
+
+        <Card className="animate-fade-up h-fit xl:sticky xl:top-2" title="Run configuration" icon={Sparkles} tone="brand">
+          <dl className="space-y-3 text-[13.5px]">
+            {[
+              { icon: Dices, label: 'Random seed', value: <span className="font-mono">20261022</span>, hint: 'Fixed & deterministic' },
+              { icon: Layers, label: 'Mode', value: mode === 'starter' ? 'Starter' : 'Full scale' },
+              { icon: HardDrive, label: 'Output', value: 'PostgreSQL + data/ CSV & JSON exports' },
+            ].map((r) => (
+              <div key={r.label} className="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                <r.icon className="w-4 h-4 mt-0.5 text-brand-600 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <dt className="text-[12.5px] text-[var(--text-3)]">{r.label}</dt>
+                  <dd className="font-medium text-[var(--text)]">{r.value}</dd>
+                  {r.hint && <p className="text-[12px] text-[var(--text-3)]">{r.hint}</p>}
                 </div>
               </div>
-            </div>
+            ))}
+          </dl>
 
-            {/* Custom 3D Circular Radio Indicator */}
-            <div className="shrink-0 pl-2">
-              <div
-                className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300"
-                style={{
-                  border: mode === 'starter' ? '2px solid #6e2fef' : '2px solid #d1d5db',
-                  background: mode === 'starter' ? '#fff' : '#f9fafb',
-                  boxShadow: mode === 'starter' ? '0 2px 6px rgba(110, 47, 239, 0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.08)'
-                }}
-              >
-                {mode === 'starter' && (
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full bg-[#6e2fef]" 
-                    style={{
-                      boxShadow: '0 1px 3px rgba(110, 47, 239, 0.5)'
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          <label className={cx('mt-3 flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors', injectAnomalies ? 'border-brand-200 bg-brand-50/50' : 'border-[var(--border)] hover:bg-[var(--surface-2)]')}>
+            <input
+              type="checkbox"
+              checked={injectAnomalies}
+              disabled={running}
+              onChange={(e) => setInjectAnomalies(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-[#6236ec] cursor-pointer"
+            />
+            <span>
+              <span className="flex items-center gap-1.5 text-[13.5px] font-medium text-[var(--text)]"><ShieldAlert className="w-4 h-4 text-brand-600" /> Inject benchmark anomalies</span>
+              <span className="block text-[12.5px] text-[var(--text-3)]">Adds the 5 labelled anomalies used by the Validation page.</span>
+            </span>
+          </label>
 
-          {/* Full Scale Mode Card */}
-          <div
-            onClick={() => setMode('full')}
-            className={`p-5 rounded-2xl cursor-pointer transition-all duration-300 flex items-center justify-between relative overflow-hidden group select-none`}
-            style={{
-              background: mode === 'full'
-                ? 'linear-gradient(135deg, #ffffff 0%, #f7f4ff 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)',
-              boxShadow: mode === 'full'
-                ? '0 14px 28px -6px rgba(110, 47, 239, 0.22), 0 6px 12px -4px rgba(110, 47, 239, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1), 0 0 0 2px #6e2fef'
-                : '0 8px 18px -4px rgba(0, 0, 0, 0.06), 0 2px 6px -2px rgba(0, 0, 0, 0.04), inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-              transform: mode === 'full' ? 'translateY(-2px)' : 'translateY(0)'
-            }}
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300`}
-                style={{
-                  background: mode === 'full'
-                    ? 'linear-gradient(135deg, #ede5fd 0%, #dfd1fa 100%)'
-                    : 'linear-gradient(135deg, #f4f3fb 0%, #ebe7f7 100%)',
-                  boxShadow: mode === 'full'
-                    ? '0 4px 10px rgba(110, 47, 239, 0.25), inset 0 1px 1px #fff'
-                    : '0 2px 5px rgba(0,0,0,0.04), inset 0 1px 1px #fff',
-                  color: mode === 'full' ? '#410cce' : '#553b9f'
-                }}
-              >
-                <Layers className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="font-extrabold text-sm text-slate-900 tracking-tight">Full Scale Mode</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  20,000 customers &bull; 100,000 orders &bull; 300,000 points txns
-                </div>
-              </div>
-            </div>
-
-            {/* Custom 3D Circular Radio Indicator */}
-            <div className="shrink-0 pl-2">
-              <div
-                className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300"
-                style={{
-                  border: mode === 'full' ? '2px solid #6e2fef' : '2px solid #d1d5db',
-                  background: mode === 'full' ? '#fff' : '#f9fafb',
-                  boxShadow: mode === 'full' ? '0 2px 6px rgba(110, 47, 239, 0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.08)'
-                }}
-              >
-                {mode === 'full' && (
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full bg-[#6e2fef]" 
-                    style={{
-                      boxShadow: '0 1px 3px rgba(110, 47, 239, 0.5)'
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Specifications Box with Vertical Divider & 3D styling */}
-        <div 
-          className="p-5 bg-gradient-to-br from-[#f8f6ff] to-[#f1edfd] rounded-2xl border border-[#e5ddfa] text-xs"
-          style={{
-            boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 4px 14px -3px rgba(110, 47, 239, 0.08)'
-          }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            {/* Left Column: Icons & Labels */}
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <Dices className="w-4 h-4 text-[#6939c9] stroke-[2.2] shrink-0" />
-                <span className="font-bold text-slate-800">Random Seed:</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <GitBranch className="w-4 h-4 text-[#6939c9] stroke-[2.2] shrink-0" />
-                <span className="font-bold text-slate-800">Generation Pipeline:</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <HardDrive className="w-4 h-4 text-[#6939c9] stroke-[2.2] shrink-0" />
-                <span className="font-bold text-slate-800">Storage Target:</span>
-              </div>
-            </div>
-
-            {/* Right Column: Values */}
-            <div className="space-y-2.5 md:border-l md:border-slate-200/80 md:pl-6 text-right md:text-right">
-              <div>
-                <span className="font-black text-[#43269c]">20261022 (Fixed deterministic)</span>
-              </div>
-              <div>
-                <span className="font-medium text-slate-700">
-                  12-Step Dependency Order (Master &rarr; Orders &rarr; Returns &rarr; Ledger)
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-slate-700">
-                  PostgreSQL `yottaflex` &amp; CSV/JSON Exports
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Trigger Data Generator Action Button */}
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-black text-sm text-white bg-gradient-to-r from-[#8245fa] via-[#6e2fef] to-[#5b1edb] hover:opacity-95 shadow-[0_4px_14px_rgba(110,47,239,0.35)] active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
-        >
-          {loading ? (
-            <RefreshCw className="w-4 h-4 animate-spin text-white" />
+          {!confirming ? (
+            <button onClick={() => setConfirming(true)} disabled={running} className="btn btn-primary btn-lg w-full mt-5">
+              {running ? <RefreshCw className="animate-spin" /> : <Sparkles />}
+              {running ? 'Generating…' : 'Generate dataset'}
+            </button>
           ) : (
-            <Sparkles className="w-4 h-4 text-white stroke-[2.2]" />
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 animate-scale-in">
+              <p className="flex items-start gap-2 text-[13.5px] text-amber-900">
+                <AlertTriangle className="w-[18px] h-[18px] shrink-0 mt-px" />
+                <span>
+                  This <strong>deletes all current loyalty data</strong> (customers, orders, ledger, redemptions) and
+                  replaces it with a fresh {mode === 'starter' ? 'starter' : 'full-scale'} dataset. Demo logins are kept.
+                </span>
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button onClick={() => setConfirming(false)} className="btn btn-secondary flex-1">Cancel</button>
+                <button onClick={handleGenerate} className="btn btn-danger flex-1">Replace data</button>
+              </div>
+            </div>
           )}
-          <span>{loading ? 'Executing Pipeline...' : 'Trigger Data Generator'}</span>
-        </button>
 
-        {/* Status Message */}
-        {statusMsg && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{statusMsg}</span>
-          </div>
-        )}
+          {requestError && (
+            <div className="callout mt-4 bg-rose-50 border-rose-200 text-rose-800 animate-scale-in">
+              <AlertCircle className="w-[18px] h-[18px] shrink-0 mt-px" />
+              <span>{requestError}</span>
+            </div>
+          )}
+
+          {status && status.state !== 'idle' && (
+            <div className={cx(
+              'callout mt-4 animate-scale-in',
+              status.state === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : status.state === 'running' ? 'bg-brand-50 border-brand-100 text-brand-800'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800',
+            )}>
+              {status.state === 'failed' ? <AlertCircle className="w-[18px] h-[18px] shrink-0 mt-px" />
+                : status.state === 'running' ? <span className="spinner mt-0.5 shrink-0" />
+                : <CheckCircle2 className="w-[18px] h-[18px] shrink-0 mt-px" />}
+              <span>{status.message}</span>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
