@@ -579,3 +579,22 @@ Provide automated Swagger UI at `/api/v1/docs`, health checks, and secure error 
 3. Assert that all 20 checksums match bit-for-bit with 0.00% delta.
 4. Print a pass/fail compliance matrix certifying strict deterministic reproducibility for the challenge submission."
 ```
+
+---
+
+### Step 11: End-to-End Automated Testing & Quality Assurance Suite
+```text
+"Act as a Principal QA & Systems Test Engineer. Build a comprehensive automated test suite and verification prompt covering all functional, edge-case, concurrency, and security invariants required by the YottaFlex.ai Challenge:
+1. Business Invariant Test Cases:
+   - TC-INV-01 (Points Accrual): Assert floor(net_spend / threshold) * points. Assert items in non-qualifying categories (gift cards, warranties) and CANCELLED orders award 0 points.
+   - TC-INV-02 (Proportional Reversals): Given an order with ₹10,000 eligible spend awarding 100 points, returning an item worth ₹4,000 must reverse exactly 40 points referencing the original transaction ID.
+   - TC-INV-03 (Idempotent Expiration): Re-running batch expiration on already expired lots must produce 0 duplicate transactions and deduct 0 additional points.
+   - TC-INV-04 (Net Spend Tier Qualification): Verify customer tier changes evaluate strictly on net qualifying spend after returns and excluded categories are deducted.
+2. Concurrency & Double-Spending Test Cases:
+   - TC-CONC-01 (Simultaneous Redemptions): Simulate 10 concurrent redemption requests on an account with exactly 100 points. Assert row-level pessimistic locking (SELECT ... FOR UPDATE) permits exactly one 100-point redemption and safely rejects the remaining 9 attempts with 400 Bad Request.
+3. Anomaly Detection & Mathematical Audit Test Cases:
+   - TC-ANOM-01 (Benchmark Scoring): Verify validation engine detection yields Precision = 1.0, Recall = 1.0, and F1 Score = 1.0 against ground_truth.json.
+   - TC-ANOM-02 (Ledger Invariant): Assert account.cached_balance == SUM(points_transactions.points_amount) across all valid accounts.
+4. Role-Based Security Test Cases:
+   - TC-SEC-01 (Access Isolation): Assert Store Operator cannot access admin tier configurations (/tiers), Analyst cannot trigger batch expirations, and Customers can only read their own customer_id ledger."
+```
